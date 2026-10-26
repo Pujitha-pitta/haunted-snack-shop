@@ -4,6 +4,7 @@ import "./style.css";
 
 const app = document.querySelector("#app");
 const SESSION_KEY = "haunted-snack-shop-player";
+const LEVELS = ["Twilight Shift", "Midnight Rush", "Witching Hour"];
 let session = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
 let room = null;
 let busy = false;
@@ -31,7 +32,7 @@ function landing(prefill = "") {
         <div class="eyebrow"><span class="live-dot"></span> NOW SERVING THE AFTERLIFE</div>
         <h1>Midnight rush.<br><em>Ghost customers.</em></h1>
         <p class="lede">Run a late-night snack counter together. Take each ghost’s order, make a treat from your shared pantry, and keep the shop open until dawn.</p>
-        <div class="feature-row"><span>👥 2–8 players</span><span>📱 Any device</span><span>⏱ 3 quick orders</span></div>
+        <div class="feature-row"><span>👥 2–8 players</span><span>📱 Any device</span><span>🌙 9 orders · 3 levels</span></div>
         <div class="counter-art" aria-hidden="true"><div class="moon">☾</div><div class="counter"><span>🥧</span><span>🫧</span><span>🍮</span><span>👻</span></div><div class="steam s1">〰</div><div class="steam s2">〰</div></div>
       </div>
       <div class="join-card">
@@ -59,10 +60,12 @@ function playerList(final = false) {
 
 function gameFrame(content, active = false) {
   const haunt = Math.min(room.haunt, 5);
+  const level = Math.min(3, Math.max(1, Math.ceil(Math.max(room.roundNumber, 1) / 3)));
+  const customerInLevel = ((Math.max(room.roundNumber, 1) - 1) % 3) + 1;
   return `<section class="game-layout">
     <div class="game-main">
       <div class="room-bar"><div><span class="room-label">YOUR SHOP</span><strong class="room-code">${room.code}</strong></div><button class="copy-button" data-action="copy">Copy invite link <span>↗</span></button></div>
-      <div class="progress-line"><div><span>ORDER ${Math.max(room.roundNumber, 1)} <i>/ 3</i></span></div><div class="progress-dots">${[1, 2, 3].map((n) => `<i class="${n <= room.roundNumber ? "filled" : ""} ${n === room.roundNumber ? "current" : ""}"></i>`).join("")}</div></div>
+      <div class="progress-line"><div><span>LEVEL ${level} · ${LEVELS[level - 1]} <i> / CUSTOMER ${customerInLevel} OF 3</i></span></div><div class="progress-dots">${[1, 2, 3].map((n) => `<i class="${n <= level ? "filled" : ""} ${n === level ? "current" : ""}"></i>`).join("")}</div></div>
       ${content}
       <div class="game-players"><div class="section-kicker">AT THE COUNTER <span>${room.players.length}/8</span></div>${playerList()}</div>
     </div>
@@ -73,12 +76,12 @@ function gameFrame(content, active = false) {
 function lobbyView() {
   const canStart = room.players.length >= 2;
   const start = room.isHost;
-  return gameFrame(`<div class="lobby-card"><div class="ghost-mark">👻</div><div class="eyebrow">THE SHOP IS OPENING</div><h1>Waiting for<br><em>the night shift.</em></h1><p class="muted">Send the room code to your crew. Once everyone’s here, the shopkeeper can start.</p><div class="invite-code"><span>ROOM CODE</span><strong>${room.code}</strong></div><div class="lobby-players"><span class="section-kicker">CREW CHECK-IN</span>${playerList()}</div>${start ? `<button class="button primary wide" data-action="start" ${canStart ? "" : "disabled"}>${canStart ? "Start with the shop briefing" : "Waiting for one more player…"} <span>→</span></button><p class="button-note">${canStart ? "Three ghost orders. One shared shop." : "Share the room code to invite someone."}</p>` : `<div class="wait-note"><span class="pulse"></span>Waiting for the shopkeeper to start…</div>`}</div>`);
+  return gameFrame(`<div class="lobby-card"><div class="ghost-mark">👻</div><div class="eyebrow">THE SHOP IS OPENING</div><h1>Waiting for<br><em>the night shift.</em></h1><p class="muted">Send the room code to your crew. Once everyone’s here, the shopkeeper can start.</p><div class="invite-code"><span>ROOM CODE</span><strong>${room.code}</strong></div><div class="lobby-players"><span class="section-kicker">CREW CHECK-IN</span>${playerList()}</div>${start ? `<button class="button primary wide" data-action="start" ${canStart ? "" : "disabled"}>${canStart ? "Start with the shop briefing" : "Waiting for one more player…"} <span>→</span></button><p class="button-note">${canStart ? "Nine ghost customers. Three levels. One shared shop." : "Share the room code to invite someone."}</p>` : `<div class="wait-note"><span class="pulse"></span>Waiting for the shopkeeper to continue…</div>`}</div>`);
 }
 
 function playingView() {
   if (room.status === "instructions") {
-    return gameFrame(`<article class="shift-briefing"><div class="briefing-icon">📋</div><div class="eyebrow">BEFORE THE DOORS OPEN</div><h1>Quick shift<br><em>briefing.</em></h1><p class="briefing-lede">A few seconds to learn the shop. Then the first customer walks in.</p><div class="briefing-steps"><div><span>1</span><p><b>Read the ticket</b><small>Each ghost tells you exactly what they ordered.</small></p></div><div><span>2</span><p><b>Check the pantry</b><small>Every dish uses two ingredients from the shared stock.</small></p></div><div><span>3</span><p><b>Send your kitchen ticket</b><small>Choose a dish. When everyone is ready, the crew serves the most popular choice.</small></p></div><div><span>4</span><p><b>Keep the shop open</b><small>Happy customers earn cook tips and restock the pantry. Wrong orders raise the haunt meter.</small></p></div></div><div class="briefing-goal"><span>🌙</span><p><b>Night shift goal</b><br>Serve three customers before the haunt meter fills.</p></div>${room.isHost ? `<button class="button primary wide" data-action="begin">Open the doors &amp; start serving <span>→</span></button>` : `<div class="wait-note"><span class="pulse"></span>Shopkeeper is setting up. Your first customer is almost here…</div>`}</article>`);
+    return gameFrame(`<article class="shift-briefing"><div class="briefing-icon">📋</div><div class="eyebrow">BEFORE THE DOORS OPEN</div><h1>Quick shift<br><em>briefing.</em></h1><p class="briefing-lede">A few seconds to learn the shop. Then the first customer walks in.</p><div class="briefing-steps"><div><span>1</span><p><b>Read the ticket</b><small>Each ghost tells you exactly what they ordered.</small></p></div><div><span>2</span><p><b>Check the pantry</b><small>Every dish uses two ingredients from the shared stock.</small></p></div><div><span>3</span><p><b>Send your kitchen ticket</b><small>Choose a dish. When everyone is ready, the crew serves the most popular choice.</small></p></div><div><span>4</span><p><b>Keep the shop open</b><small>Happy customers earn cook tips and restock the pantry. Wrong orders raise the haunt meter faster as each level gets busier.</small></p></div></div><div class="briefing-goal"><span>🌙</span><p><b>Night shift goal</b><br>Serve nine customers across three levels before the haunt meter fills.</p></div>${room.isHost ? `<button class="button primary wide" data-action="begin">Open the doors &amp; start serving <span>→</span></button>` : `<div class="wait-note"><span class="pulse"></span>Shopkeeper is setting up. Your first customer is almost here…</div>`}</article>`);
   }
   const r = room.round;
   const arriving = lastArrivalRound !== room.roundNumber;
@@ -95,7 +98,10 @@ function playingView() {
 function resultView() {
   const result = room.round.result;
   const revealed = result.success ? result.recipe : result.answer;
-  return gameFrame(`<article class="result-card ${result.success ? "good" : "bad"}"><div class="result-stamp">${result.success ? "ORDER SERVED" : result.tied ? "KITCHEN SPLIT" : "CUSTOMER TURNED AWAY"}</div><div class="result-icon">${result.success ? "✨" : "👻"}</div><h1>${result.success ? "A perfect" : "A spooky"}<br><em>${result.success ? "little treat." : "misunderstanding."}</em></h1><p class="result-message">${safe(result.message)}</p><div class="revealed-dish"><span>${result.success ? "HAPPY CUSTOMER" : "THE CUSTOMER ORDERED"}</span><b>${safe(revealed || "A different snack")}</b></div><div class="round-score"><div class="section-kicker">SHIFT TIPS</div>${playerList(true)}</div>${room.isHost ? `<button class="button primary wide" data-action="next">${room.roundNumber >= 3 || room.haunt >= 5 ? "See the final score" : "Take the next order"} <span>→</span></button>` : `<div class="wait-note"><span class="pulse"></span>Waiting for the shopkeeper to continue…</div>`}</article>`);
+  const level = Math.min(3, Math.ceil(room.roundNumber / 3));
+  const nextLevel = level < 3 && room.roundNumber % 3 === 0;
+  const nextLabel = room.roundNumber >= 9 || room.haunt >= 5 ? "See the final score" : nextLevel ? `Start Level ${level + 1}: ${LEVELS[level]}` : "Welcome the next customer";
+  return gameFrame(`<article class="result-card ${result.success ? "good" : "bad"}"><div class="result-stamp">${result.success ? "ORDER SERVED" : result.tied ? "KITCHEN SPLIT" : "CUSTOMER TURNED AWAY"}</div><div class="result-icon">${result.success ? "✨" : "👻"}</div><h1>${result.success ? "A perfect" : "A spooky"}<br><em>${result.success ? "little treat." : "misunderstanding."}</em></h1><p class="result-message">${safe(result.message)}</p><div class="revealed-dish"><span>${result.success ? "HAPPY CUSTOMER" : "THE CUSTOMER ORDERED"}</span><b>${safe(revealed || "A different snack")}</b></div><div class="round-score"><div class="section-kicker">SHIFT TIPS</div>${playerList(true)}</div>${room.isHost ? `<button class="button primary wide" data-action="next">${nextLabel} <span>→</span></button>` : `<div class="wait-note"><span class="pulse"></span>Waiting for the shopkeeper to continue…</div>`}</article>`);
 }
 
 function finishedView() {
