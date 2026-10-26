@@ -188,7 +188,12 @@ app.addEventListener("click", async (event) => {
 });
 
 async function resume() {
-  if (!session) return landing();
+  const invite = new URLSearchParams(location.search).get("room") || "";
+  if (session && invite && invite.toUpperCase() !== session.code) {
+    session = null;
+    localStorage.removeItem(SESSION_KEY);
+  }
+  if (!session) return landing(invite);
   try {
     room = await request("get", { code: session.code, playerId: session.playerId });
     renderRoom();
