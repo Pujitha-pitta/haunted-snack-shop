@@ -45,7 +45,6 @@ function view(room: any, playerId: string) {
       ghost: round.order.ghost,
       icon: round.order.icon,
       request: round.order.request,
-      clue: round.clues[playerId],
       options: round.order.options,
       votesIn: Object.keys(round.votes).length,
       vote: round.votes[playerId] ?? null,
@@ -87,7 +86,7 @@ function resolve(room: any) {
     });
     room.haunt = Math.max(0, room.haunt - 1);
     room.pantry[round.order.restock] += 1;
-    room.round.result = { success: true, tied: false, chosen, recipe: option.name, message: `${round.order.ghost} loved it! The shop earned a star and the pantry restocked.` };
+    room.round.result = { success: true, tied: false, chosen, recipe: option.name, message: `${round.order.ghost} loved the order! The kitchen earned a tip and the pantry restocked.` };
   } else {
     room.haunt = Math.min(5, room.haunt + (tied ? 1 : 2));
     if (option) Object.keys(option.cost).forEach((key) => { room.pantry[key] = Math.max(0, room.pantry[key] - option.cost[key]); });
@@ -97,7 +96,7 @@ function resolve(room: any) {
       chosen,
       recipe: option?.name ?? null,
       answer: round.order.options.find((o: any) => o.id === round.order.answer)?.name,
-      message: tied ? "A tie! Nobody could decide, and the shop grew a little spookier." : `${round.order.ghost} wanted something else. The wrong dish used up pantry supplies.`
+      message: tied ? "A tie! Nobody could decide, and the shop grew a little spookier." : `${round.order.ghost} could not eat that order. The wrong dish used up pantry supplies.`
     };
   }
   room.status = "result";
@@ -106,7 +105,7 @@ function resolve(room: any) {
 function setupRound(room: any, roundIndex: number) {
   const order = room.deck[roundIndex];
   room.roundNumber = roundIndex + 1;
-  room.round = { order, clues: assignClues(order, room.players), votes: {}, result: null };
+  room.round = { order, votes: {}, result: null };
   room.status = "playing";
 }
 
@@ -191,11 +190,11 @@ export default async (req: Request, _context: Context) => {
         setupRound(room, 0);
         return view(room, playerId);
       }
-      if (action === "vote") {
-        if (room.status !== "playing") fail("Voting is closed for this order.", 409);
-        if (room.round.votes[playerId]) fail("Your snack choice is already locked.", 409);
+      if (action === "serve") {
+        if (room.status !== "playing") fail("The kitchen ticket window is closed.", 409);
+        if (room.round.votes[playerId]) fail("Your kitchen ticket is already in.", 409);
         const chosen = room.round.order.options.find((o: any) => o.id === body.choice);
-        if (!chosen) fail("Choose one of the snacks on the menu.");
+        if (!chosen) fail("Choose a dish from the kitchen menu.");
         for (const [key, amount] of Object.entries(chosen.cost)) {
           if (room.pantry[key] < (amount as number)) fail("The pantry is short on ingredients for that snack.", 409);
         }
