@@ -2,7 +2,7 @@ export const ORDER_DECK = [
   {
     ghost: "Captain Crumble",
     icon: "⚓",
-    request: "One Moonlit Seafoam, please—extra bubbles, and make it sweet!",
+    request: "I'm craving something pale and sweet with lots of tiny bubbles, like a fizzy moonlit drink.",
     answer: "seafoam",
     options: [
       { id: "seafoam", name: "Moonlit Seafoam", icon: "🫧", ingredients: ["Moonmilk", "Sugar"], cost: { moonmilk: 1, sugar: 1 } },
@@ -14,7 +14,7 @@ export const ORDER_DECK = [
   {
     ghost: "Mabel the Moon Gardener",
     icon: "🌙",
-    request: "Could I have Lavender Moon Pudding? Something gentle and floral, please. No heat!",
+    request: "I'd love a cool, creamy treat with a gentle garden-flower scent. Keep it mild, please.",
     answer: "garden",
     options: [
       { id: "garden", name: "Lavender Moon Pudding", icon: "🍮", ingredients: ["Moonmilk", "Star spice"], cost: { moonmilk: 1, spice: 1 } },
@@ -26,7 +26,7 @@ export const ORDER_DECK = [
   {
     ghost: "Professor Picklewick",
     icon: "🧪",
-    request: "One Ectoplasm Jelly! Make it wobbly, sweet, and bright green!",
+    request: "Surprise me with a bright green, sugary treat that jiggles when I tap the plate!",
     answer: "jelly",
     options: [
       { id: "jelly", name: "Ectoplasm Jelly", icon: "🟢", ingredients: ["Ectoplasm", "Sugar"], cost: { ectoplasm: 1, sugar: 1 } },
@@ -38,7 +38,7 @@ export const ORDER_DECK = [
   {
     ghost: "The Sleepy Dragon",
     icon: "🐉",
-    request: "Dreamdust Cake, please—warm and soft, with just a tiny pinch of spice.",
+    request: "A warm, soft baked treat to help me drift off, with just a tiny bit of sparkle.",
     answer: "dreamcake",
     options: [
       { id: "dreamcake", name: "Dreamdust Cake", icon: "🍰", ingredients: ["Moonmilk", "Star spice"], cost: { moonmilk: 1, spice: 1 } },
@@ -50,7 +50,7 @@ export const ORDER_DECK = [
   {
     ghost: "Auntie Banshee",
     icon: "👻",
-    request: "Sugar-Crackle Bites, please! Crunchy and sweet to soothe my throat.",
+    request: "I need a crunchy, sweet bite with a little magical snap. Nothing soft or wobbly!",
     answer: "crackle",
     options: [
       { id: "crackle", name: "Sugar-Crackle Bites", icon: "🍪", ingredients: ["Sugar", "Star spice"], cost: { sugar: 1, spice: 1 } },
@@ -62,7 +62,7 @@ export const ORDER_DECK = [
   {
     ghost: "Baron von Napkin",
     icon: "🧛",
-    request: "A Silk-Ribbon Truffle, served neatly on a plate, if you please.",
+    request: "Something smooth and elegant, a tiny sweet I can eat neatly from a little plate.",
     answer: "silk",
     options: [
       { id: "silk", name: "Silk-Ribbon Truffle", icon: "🍬", ingredients: ["Moonmilk", "Ectoplasm"], cost: { moonmilk: 1, ectoplasm: 1 } },
@@ -74,12 +74,12 @@ export const ORDER_DECK = [
 ];
 
 const EXTRA_CUSTOMERS = [
-  ["Tilly Tidepool", "🧜‍♀️", "Moonlit Seafoam, please! Make it bubbly and extra sweet."],
-  ["Fern the Night Owl", "🦉", "Lavender Moon Pudding, please. Soft, floral, and not spicy."],
-  ["Dr. Greenbean", "🧟", "Ectoplasm Jelly! I want it wobbly, sugary, and green."],
-  ["Dozy the Dragon", "🐲", "Dreamdust Cake before bed, please—warm with just a little spice."],
-  ["Banshee Betty", "🎤", "Sugar-Crackle Bites, please. I need something crunchy and sweet."],
-  ["Count Crouton", "🧛", "One neat Silk-Ribbon Truffle on a plate, please. Nothing messy."]
+  ["Tilly Tidepool", "🧜‍♀️", "I'm craving something pale and sweet with lots of tiny bubbles, like a fizzy moonlit drink."],
+  ["Fern the Night Owl", "🦉", "I'd love a cool, creamy treat with a gentle garden-flower scent. Keep it mild, please."],
+  ["Dr. Greenbean", "🧟", "Surprise me with a bright green, sugary treat that jiggles when I tap the plate!"],
+  ["Dozy the Dragon", "🐲", "A warm, soft baked treat to help me drift off, with just a tiny bit of sparkle."],
+  ["Banshee Betty", "🎤", "I need a crunchy, sweet bite with a little magical snap. Nothing soft or wobbly!"],
+  ["Count Crouton", "🧛", "Something smooth and elegant, a tiny sweet I can eat neatly from a little plate."]
 ];
 
 ORDER_DECK.push(...EXTRA_CUSTOMERS.map(([ghost, icon, request], index) => ({
