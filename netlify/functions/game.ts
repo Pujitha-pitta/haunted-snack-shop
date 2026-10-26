@@ -76,6 +76,10 @@ function resolve(room: any) {
   const chosen = tied ? null : winner[0];
   const correct = chosen === round.order.answer;
   const option = round.order.options.find((o: any) => o.id === chosen);
+  const cookId = Object.keys(round.votes).find((id) => round.votes[id] === chosen) || Object.keys(round.votes)[0];
+  const cook = round.prep?.[cookId];
+  const usedIngredients = option?.cost ?? (cook?.ingredients || []).reduce((cost: any, key: string) => { cost[key] = (cost[key] || 0) + 1; return cost; }, {});
+  Object.entries(usedIngredients).forEach(([key, amount]: any) => { room.pantry[key] = Math.max(0, room.pantry[key] - amount); });
 
   if (correct) {
     room.players.forEach((p: any) => {
@@ -87,7 +91,6 @@ function resolve(room: any) {
   } else {
     const level = Math.ceil(room.roundNumber / 3);
     room.haunt = Math.min(5, room.haunt + (tied ? level : level + 1));
-    if (option) Object.keys(option.cost).forEach((key) => { room.pantry[key] = Math.max(0, room.pantry[key] - option.cost[key]); });
     room.round.result = {
       success: false,
       tied,
