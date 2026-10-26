@@ -1,6 +1,6 @@
 import { getStore } from "@netlify/blobs";
 import type { Context } from "@netlify/functions";
-import { ORDER_DECK, PREP_RECIPES } from "../../src/orders.js";
+import { ORDER_DECK, PANTRY_NAMES, PREP_RECIPES } from "../../src/orders.js";
 
 const store = getStore({ name: "haunted-snack-shop", consistency: "strong" });
 const MAX_PLAYERS = 8;
@@ -31,6 +31,19 @@ function makeRoomCode() {
   return Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
 }
 
+function prepInstructions(order: any) {
+  const recipe = PREP_RECIPES[order.answer as keyof typeof PREP_RECIPES];
+  if (!recipe) return "Add two pantry ingredients, choose a cooking station, then finish the dish.";
+  const ingredients = recipe.ingredients.map((key) => PANTRY_NAMES[key as keyof typeof PANTRY_NAMES]).join(" and ");
+  const stationNames: Record<string, string> = { stove: "stove", oven: "oven", mixer: "mixer", kettle: "kettle" };
+  const finishNames: Record<string, string> = {
+    fizz: "Whip in bubbles", bake: "Bake until golden", chill: "Cool it until it sets",
+    steep: "Steep gently", pop: "Heat until it pops", dust: "Dust with sparkle",
+    crunch: "Bake until crisp", dip: "Dip in a smooth glaze"
+  };
+  return `Add ${ingredients} to the bowl, take it to the ${stationNames[recipe.station]}, then ${finishNames[recipe.finish].toLowerCase()}.`;
+}
+
 function view(room: any, playerId: string) {
   const round = room.round;
   return {
@@ -46,6 +59,7 @@ function view(room: any, playerId: string) {
       ghost: round.order.ghost,
       icon: round.order.icon,
       request: round.order.request,
+      prepHint: prepInstructions(round.order),
       options: round.order.options,
       votesIn: Object.values(round.prep || {}).filter((p: any) => p.done).length,
       vote: round.votes[playerId] ?? null,
