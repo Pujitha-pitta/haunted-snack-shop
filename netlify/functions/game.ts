@@ -65,11 +65,6 @@ function host(room: any, playerId: string) {
   if (room.hostId !== playerId) fail("Only the shop owner can do that.", 403);
 }
 
-function assignClues(order: any, players: any[]) {
-  const clues = [...order.clues].sort(() => Math.random() - 0.5);
-  return Object.fromEntries(players.map((p, index) => [p.id, clues[index % clues.length]]));
-}
-
 function resolve(room: any) {
   const round = room.round;
   const counts: Record<string, number> = {};
@@ -188,6 +183,13 @@ export default async (req: Request, _context: Context) => {
         room.haunt = 0;
         room.pantry = { ...pantryStart };
         setupRound(room, 0);
+        room.status = "instructions";
+        return view(room, playerId);
+      }
+      if (action === "begin") {
+        host(room, playerId);
+        if (room.status !== "instructions") fail("The shift briefing is already complete.", 409);
+        room.status = "playing";
         return view(room, playerId);
       }
       if (action === "serve") {
