@@ -73,9 +73,25 @@ export const ORDER_DECK = [
   }
 ];
 
+const EXTRA_CUSTOMERS = [
+  ["Tilly Tidepool", "🧜‍♀️", "Moonlit Seafoam, please! Make it bubbly and extra sweet."],
+  ["Fern the Night Owl", "🦉", "Lavender Moon Pudding, please. Soft, floral, and not spicy."],
+  ["Dr. Greenbean", "🧟", "Ectoplasm Jelly! I want it wobbly, sugary, and green."],
+  ["Dozy the Dragon", "🐲", "Dreamdust Cake before bed, please—warm with just a little spice."],
+  ["Banshee Betty", "🎤", "Sugar-Crackle Bites, please. I need something crunchy and sweet."],
+  ["Count Crouton", "🧛", "One neat Silk-Ribbon Truffle on a plate, please. Nothing messy."]
+];
+
+ORDER_DECK.push(...EXTRA_CUSTOMERS.map(([ghost, icon, request], index) => ({
+  ...ORDER_DECK[index],
+  ghost,
+  icon,
+  request
+})));
+
 export const PANTRY_NAMES = { moonmilk: "Moonmilk", sugar: "Sugar", ectoplasm: "Ectoplasm", spice: "Star spice" };
 
 export function makeDeck() {
-  return [...ORDER_DECK].sort(() => Math.random() - 0.5).slice(0, 3);
+  return [...ORDER_DECK].sort(() => Math.random() - 0.5).slice(0, 9);
 }
 
