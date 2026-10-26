@@ -8,6 +8,7 @@ let session = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
 let room = null;
 let busy = false;
 let pollHandle = null;
+let lastArrivalRound = 0;
 
 const safe = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const toast = (message) => {
@@ -72,35 +73,41 @@ function gameFrame(content, active = false) {
 function lobbyView() {
   const canStart = room.players.length >= 2;
   const start = room.isHost;
-  return gameFrame(`<div class="lobby-card"><div class="ghost-mark">👻</div><div class="eyebrow">THE SHOP IS OPENING</div><h1>Waiting for<br><em>the night shift.</em></h1><p class="muted">Send the room code to your crew. Once everyone’s here, the shopkeeper can start.</p><div class="invite-code"><span>ROOM CODE</span><strong>${room.code}</strong></div><div class="lobby-players"><span class="section-kicker">CREW CHECK-IN</span>${playerList()}</div>${start ? `<button class="button primary wide" data-action="start" ${canStart ? "" : "disabled"}>${canStart ? "Start the night shift" : "Waiting for one more player…"} <span>→</span></button><p class="button-note">${canStart ? "Three ghost orders. One shared shop." : "Share the room code to invite someone."}</p>` : `<div class="wait-note"><span class="pulse"></span>Waiting for the shopkeeper to start…</div>`}</div>`);
+  return gameFrame(`<div class="lobby-card"><div class="ghost-mark">👻</div><div class="eyebrow">THE SHOP IS OPENING</div><h1>Waiting for<br><em>the night shift.</em></h1><p class="muted">Send the room code to your crew. Once everyone’s here, the shopkeeper can start.</p><div class="invite-code"><span>ROOM CODE</span><strong>${room.code}</strong></div><div class="lobby-players"><span class="section-kicker">CREW CHECK-IN</span>${playerList()}</div>${start ? `<button class="button primary wide" data-action="start" ${canStart ? "" : "disabled"}>${canStart ? "Start with the shop briefing" : "Waiting for one more player…"} <span>→</span></button><p class="button-note">${canStart ? "Three ghost orders. One shared shop." : "Share the room code to invite someone."}</p>` : `<div class="wait-note"><span class="pulse"></span>Waiting for the shopkeeper to start…</div>`}</div>`);
 }
 
 function playingView() {
+  if (room.status === "instructions") {
+    return gameFrame(`<article class="shift-briefing"><div class="briefing-icon">📋</div><div class="eyebrow">BEFORE THE DOORS OPEN</div><h1>Quick shift<br><em>briefing.</em></h1><p class="briefing-lede">A few seconds to learn the shop. Then the first customer walks in.</p><div class="briefing-steps"><div><span>1</span><p><b>Read the ticket</b><small>Each ghost tells you exactly what they ordered.</small></p></div><div><span>2</span><p><b>Check the pantry</b><small>Every dish uses two ingredients from the shared stock.</small></p></div><div><span>3</span><p><b>Send your kitchen ticket</b><small>Choose a dish. When everyone is ready, the crew serves the most popular choice.</small></p></div><div><span>4</span><p><b>Keep the shop open</b><small>Happy customers earn cook tips and restock the pantry. Wrong orders raise the haunt meter.</small></p></div></div><div class="briefing-goal"><span>🌙</span><p><b>Night shift goal</b><br>Serve three customers before the haunt meter fills.</p></div>${room.isHost ? `<button class="button primary wide" data-action="begin">Open the doors &amp; start serving <span>→</span></button>` : `<div class="wait-note"><span class="pulse"></span>Shopkeeper is setting up. Your first customer is almost here…</div>`}</article>`);
+  }
   const r = room.round;
+  const arriving = lastArrivalRound !== room.roundNumber;
+  lastArrivalRound = room.roundNumber;
   const voted = Boolean(r.vote);
   const options = r.options.map((option) => {
     const stocked = Object.entries(option.cost).every(([key, n]) => room.pantry[key] >= n);
     return `<button class="snack-option ${!stocked ? "unavailable" : ""}" data-action="serve" data-choice="${safe(option.id)}" ${voted || !stocked ? "disabled" : ""}><span class="snack-icon">${option.icon}</span><span class="snack-copy"><b>${safe(option.name)}</b><small>${option.ingredients.map(safe).join(" + ")}</small></span><span class="snack-arrow">${voted ? "✓" : stocked ? "SERVE" : "OUT"}</span></button>`;
   }).join("");
   const missing = room.players.length - r.votesIn;
-  return gameFrame(`<article class="order-card"><div class="order-heading"><div class="ghost-avatar customer-ghost">${r.icon}</div><div><span class="section-kicker">CUSTOMER AT THE COUNTER</span><h2>${safe(r.ghost)}</h2></div><span class="order-ticket">TICKET #${String(room.roundNumber).padStart(2, "0")}</span></div><div class="request-box order-slip"><span class="slip-label">CUSTOMER ORDER</span><p>${safe(r.request)}</p><small>The kitchen is open. Check your shared pantry before serving.</small></div><div class="menu-head"><div><span class="section-kicker">KITCHEN MENU</span><p>Choose a dish to prepare for this customer.</p></div><span class="vote-count">${r.votesIn}/${room.players.length}<small>ORDERS IN</small></span></div><div class="snack-menu">${options}</div>${voted ? `<div class="wait-note"><span class="pulse"></span>Your ticket is in. Waiting for ${missing} ${missing === 1 ? "more cook" : "more cooks"}…</div>` : `<p class="button-note">Choose a dish, then send your kitchen ticket.</p>`}</article>`);
+  return gameFrame(`<article class="order-card"><div class="shop-scene ${arriving ? "arriving" : ""}"><div class="scene-door"><span>OPEN</span><b>🚪</b></div><div class="walking-ghost">${r.icon}</div><div class="scene-counter">🛎 &nbsp; COUNTER</div><div class="scene-caption">${arriving ? "A CUSTOMER IS WALKING IN…" : "CUSTOMER AT THE COUNTER"}</div></div><div class="order-heading"><div class="ghost-avatar customer-ghost">${r.icon}</div><div><span class="section-kicker">CUSTOMER AT THE COUNTER</span><h2>${safe(r.ghost)}</h2></div><span class="order-ticket">TICKET #${String(room.roundNumber).padStart(2, "0")}</span></div><div class="request-box order-slip"><span class="slip-label">CUSTOMER ORDER</span><p>${safe(r.request)}</p><small>The kitchen is open. Check your shared pantry before serving.</small></div><div class="menu-head"><div><span class="section-kicker">KITCHEN MENU</span><p>Choose a dish to prepare for this customer.</p></div><span class="vote-count">${r.votesIn}/${room.players.length}<small>COOKS READY</small></span></div><div class="snack-menu">${options}</div>${voted ? `<div class="wait-note"><span class="pulse"></span>Your ticket is in. Waiting for ${missing} ${missing === 1 ? "more cook" : "more cooks"}…</div>` : `<p class="button-note">Choose a dish, then send your kitchen ticket.</p>`}</article>`);
 }
 
 function resultView() {
   const result = room.round.result;
   const revealed = result.success ? result.recipe : result.answer;
-  return gameFrame(`<article class="result-card ${result.success ? "good" : "bad"}"><div class="result-stamp">${result.success ? "ORDER SERVED" : result.tied ? "KITCHEN SPLIT" : "CUSTOMER TURNED AWAY"}</div><div class="result-icon">${result.success ? "✨" : "👻"}</div><h1>${result.success ? "A perfect" : "A spooky"}<br><em>${result.success ? "little treat." : "misunderstanding."}</em></h1><p class="result-message">${safe(result.message)}</p><div class="revealed-dish"><span>${result.success ? "HAPPY CUSTOMER" : "THE CUSTOMER ORDERED"}</span><b>${safe(revealed || "A different snack")}</b></div><div class="round-score"><div class="section-kicker">SHOP SCOREBOARD</div>${playerList(true)}</div>${room.isHost ? `<button class="button primary wide" data-action="next">${room.roundNumber >= 3 || room.haunt >= 5 ? "See the final score" : "Take the next order"} <span>→</span></button>` : `<div class="wait-note"><span class="pulse"></span>Waiting for the shopkeeper to continue…</div>`}</article>`);
+  return gameFrame(`<article class="result-card ${result.success ? "good" : "bad"}"><div class="result-stamp">${result.success ? "ORDER SERVED" : result.tied ? "KITCHEN SPLIT" : "CUSTOMER TURNED AWAY"}</div><div class="result-icon">${result.success ? "✨" : "👻"}</div><h1>${result.success ? "A perfect" : "A spooky"}<br><em>${result.success ? "little treat." : "misunderstanding."}</em></h1><p class="result-message">${safe(result.message)}</p><div class="revealed-dish"><span>${result.success ? "HAPPY CUSTOMER" : "THE CUSTOMER ORDERED"}</span><b>${safe(revealed || "A different snack")}</b></div><div class="round-score"><div class="section-kicker">SHIFT TIPS</div>${playerList(true)}</div>${room.isHost ? `<button class="button primary wide" data-action="next">${room.roundNumber >= 3 || room.haunt >= 5 ? "See the final score" : "Take the next order"} <span>→</span></button>` : `<div class="wait-note"><span class="pulse"></span>Waiting for the shopkeeper to continue…</div>`}</article>`);
 }
 
 function finishedView() {
   const standings = [...room.players].sort((a, b) => b.stars - a.stars);
   const won = room.haunt < 5;
-  return gameFrame(`<article class="result-card final ${won ? "good" : "bad"}"><div class="result-stamp">SHOP CLOSED</div><div class="result-icon">${won ? "🌙" : "💥"}</div><h1>${won ? "A night well" : "Too haunted"}<br><em>${won ? "served." : "done."}</em></h1><p class="result-message">${won ? "Your crew made it through the midnight rush. The ghosts will be back." : "The haunting took over the shop. Better luck on the next night shift."}</p><div class="round-score"><div class="section-kicker">FINAL STANDINGS</div>${playerList(true)}</div><button class="button secondary wide" data-action="new-shop">Open another shop <span>↗</span></button></article>`);
+  return gameFrame(`<article class="result-card final ${won ? "good" : "bad"}"><div class="result-stamp">SHOP CLOSED</div><div class="result-icon">${won ? "🌙" : "💥"}</div><h1>${won ? "A night well" : "Too haunted"}<br><em>${won ? "served." : "done."}</em></h1><p class="result-message">${won ? "Your crew made it through the midnight rush. The ghosts will be back." : "The haunting took over the shop. Better luck on the next night shift."}</p><div class="round-score"><div class="section-kicker">FINAL SHIFT TIPS</div>${playerList(true)}</div><button class="button secondary wide" data-action="new-shop">Open another shop <span>↗</span></button></article>`);
 }
 
 function render() {
   if (!room) return landing();
   if (room.status === "lobby") app.innerHTML = shell(lobbyView());
+  if (room.status === "instructions") app.innerHTML = shell(playingView());
   if (room.status === "playing") app.innerHTML = shell(playingView());
   if (room.status === "result") app.innerHTML = shell(resultView());
   if (room.status === "finished") app.innerHTML = shell(finishedView());
@@ -184,6 +191,7 @@ app.addEventListener("click", async (event) => {
     room = null; session = null; localStorage.removeItem(SESSION_KEY); history.replaceState({}, "", "/"); landing(); return;
   }
   if (action === "serve") { await act("serve", { choice: button.dataset.choice }); return; }
+  if (action === "begin") { await act("begin"); return; }
   await act(action);
 });
 
