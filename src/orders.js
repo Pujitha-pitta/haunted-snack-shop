@@ -2,7 +2,7 @@ export const ORDER_DECK = [
   {
     ghost: "Captain Crumble",
     icon: "⚓",
-    request: "I miss the hush of the deep sea, and the last thing I ate was sweet.",
+    request: "One Moonlit Seafoam, please—extra bubbles, and make it sweet!",
     answer: "seafoam",
     clues: [
       "This ghost misses somewhere quiet and underwater.",
@@ -24,7 +24,7 @@ export const ORDER_DECK = [
   {
     ghost: "Mabel the Moon Gardener",
     icon: "🌙",
-    request: "A gentle garden smell, please. Nothing too hot—I burned my tongue in 1892.",
+    request: "Could I have Lavender Moon Pudding? Something gentle and floral, please. No heat!",
     answer: "garden",
     clues: [
       "The customer was happiest among flowers and herbs.",
@@ -46,7 +46,7 @@ export const ORDER_DECK = [
   {
     ghost: "Professor Picklewick",
     icon: "🧪",
-    request: "I want a wobbly snack that looks a little questionable. I do love a sweet surprise.",
+    request: "One Ectoplasm Jelly! Make it wobbly, sweet, and bright green!",
     answer: "jelly",
     clues: [
       "The professor was famous for strange experiments.",
@@ -68,7 +68,7 @@ export const ORDER_DECK = [
   {
     ghost: "The Sleepy Dragon",
     icon: "🐉",
-    request: "Something cozy before bed, please. A tiny pinch of spice wakes up my dreams.",
+    request: "Dreamdust Cake, please—warm and soft, with just a tiny pinch of spice.",
     answer: "dreamcake",
     clues: [
       "This customer wants a bedtime treat.",
@@ -90,7 +90,7 @@ export const ORDER_DECK = [
   {
     ghost: "Auntie Banshee",
     icon: "👻",
-    request: "I have been shrieking all night. Something crunchy and sweet might soothe my throat.",
+    request: "Sugar-Crackle Bites, please! Crunchy and sweet to soothe my throat.",
     answer: "crackle",
     clues: [
       "The customer has a very loud job.",
@@ -112,7 +112,7 @@ export const ORDER_DECK = [
   {
     ghost: "Baron von Napkin",
     icon: "🧛",
-    request: "A fancy little snack with a dramatic flourish. Nothing messy, if you please.",
+    request: "A Silk-Ribbon Truffle, served neatly on a plate, if you please.",
     answer: "silk",
     clues: [
       "The customer thinks every meal is a royal event.",
