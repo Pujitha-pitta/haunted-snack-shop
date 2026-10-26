@@ -91,7 +91,19 @@ ORDER_DECK.push(...EXTRA_CUSTOMERS.map(([ghost, icon, request], index) => ({
 
 export const PANTRY_NAMES = { moonmilk: "Moonmilk", sugar: "Sugar", ectoplasm: "Ectoplasm", spice: "Star spice" };
 
+// Each dish is assembled from pantry goods, then prepared at a station and finished.
+// The dish names stay hidden during play; only the customer clue and kitchen actions show.
+export const PREP_RECIPES = {
+  seafoam: { ingredients: ["moonmilk", "sugar"], station: "mixer", finish: "fizz" },
+  ember: { ingredients: ["sugar", "spice"], station: "oven", finish: "bake" },
+  jelly: { ingredients: ["ectoplasm", "sugar"], station: "stove", finish: "chill" },
+  garden: { ingredients: ["moonmilk", "spice"], station: "stove", finish: "steep" },
+  spark: { ingredients: ["sugar", "spice"], station: "kettle", finish: "pop" },
+  dreamcake: { ingredients: ["moonmilk", "spice"], station: "oven", finish: "dust" },
+  crackle: { ingredients: ["sugar", "spice"], station: "oven", finish: "crunch" },
+  silk: { ingredients: ["moonmilk", "ectoplasm"], station: "mixer", finish: "dip" }
+};
+
 export function makeDeck() {
   return [...ORDER_DECK].sort(() => Math.random() - 0.5).slice(0, 9);
 }
-
