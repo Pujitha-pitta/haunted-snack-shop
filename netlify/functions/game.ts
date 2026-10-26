@@ -60,6 +60,7 @@ function view(room: any, playerId: string) {
       icon: round.order.icon,
       request: round.order.request,
       prepHint: prepInstructions(round.order),
+      surprise: round.surprise ? { ...round.surprise, claimed: Boolean(round.surprise.claimedBy), claimedBy: undefined } : null,
       options: round.order.options,
       votesIn: Object.values(round.prep || {}).filter((p: any) => p.done).length,
       vote: round.votes[playerId] ?? null,
@@ -120,7 +121,13 @@ function resolve(room: any) {
 function setupRound(room: any, roundIndex: number) {
   const order = room.deck[roundIndex];
   room.roundNumber = roundIndex + 1;
-  room.round = { order, votes: {}, prep: {}, result: null };
+  const surprises = [
+    { title: "Poltergeist’s runaway star!", prompt: "Quick! Tap the star before it floats away. First cook to catch it earns a bonus tip and calms the haunt.", icon: "🌟" },
+    { title: "The bell is ringing by itself!", prompt: "Ring the counter bell together! First cook to tap it earns a bonus tip and calms the haunt.", icon: "🔔" },
+    { title: "A lucky moon-cookie appeared!", prompt: "Grab the floating cookie before the ghosts spot it. First cook to tap it earns a bonus tip and calms the haunt.", icon: "🍪" }
+  ];
+  const surprise = surprises[Math.floor(Math.random() * surprises.length)];
+  room.round = { order, votes: {}, prep: {}, result: null, surprise: { ...surprise, claimedBy: null } };
   room.status = "playing";
 }
 
@@ -241,6 +248,14 @@ export default async (req: Request, _context: Context) => {
         }
         return view(room, playerId);
       }
+      if (action === "surprise") {
+        if (room.status !== "playing") fail("The surprise is gone with the customer.", 409);
+        if (!room.round?.surprise || room.round.surprise.claimedBy) fail("Another cook caught the surprise first!", 409);
+        room.round.surprise.claimedBy = playerId;
+        me.stars += 1;
+        room.haunt = Math.max(0, room.haunt - 1);
+        return view(room, playerId);
+      }
       if (action === "next") {
         host(room, playerId);
         if (room.status !== "result") fail("Finish the current order first.", 409);
@@ -262,3 +277,4 @@ export default async (req: Request, _context: Context) => {
     return json({ error: error?.message || "The ghosts are having trouble. Try again." }, error?.status || 500);
   }
 };
+
