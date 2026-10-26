@@ -150,7 +150,7 @@ export default async (req: Request, _context: Context) => {
           players: [{ id: playerId, name, stars: 0, online: true }], createdAt: Date.now()
         };
         const saved = await store.setJSON(code, room, { onlyIfNew: true });
-        if (saved.etag) return json({ room: view(room, playerId), playerId });
+        if (saved.modified) return json({ room: view(room, playerId), playerId });
       }
       fail("Could not find an open room code. Try again.", 503);
     }
