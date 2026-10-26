@@ -1,0 +1,18 @@
+{
+  "name": "haunted-snack-shop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^10.0.0"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^3.1.10",
+    "vite": "^6.4.1"
+  }
+}
+
