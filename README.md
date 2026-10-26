@@ -1,12 +1,12 @@
 # The Haunted Snack Shop
 
-A phone-friendly multiplayer party game. Players join a room with a six-character code, get different private clues about the same ghost, then vote on what snack the group should serve.
+A phone-friendly cooperative shop game. Players join a room with a six-character code, welcome ghost customers as they arrive, read their orders, check a shared pantry, and send kitchen tickets for dishes to serve.
 
 ## Rules
 
 - 2–8 players join a shop. The shopkeeper starts the game once at least two players are in the room.
-- Each game has three ghost customers. Every player receives one private clue on their own screen; share clues out loud to work out the best snack.
-- Everyone locks in one snack. When the crew has voted, the most popular snack is served. A tie counts as an order gone wrong.
+- Each game brings three ghost customers into the shop. Every customer gives a clear order, and the crew checks its shared pantry before preparing a dish.
+- Each player sends one kitchen ticket. When the whole crew is ready, the most popular dish is served to the waiting customer. A split kitchen slows the shop down.
 - Correct deliveries earn one star for each player who chose the right snack, lower the haunt meter, and restock one ingredient.
 - A wrong delivery raises the haunt meter by two and uses the chosen recipe’s ingredients. A tie raises it by one.
 - The crew wins if they finish three orders before the haunt meter reaches five. The player with the most stars wins the shop’s bragging rights.
