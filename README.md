@@ -5,11 +5,11 @@ A phone-friendly cooperative shop game. Players join a room with a six-character
 ## Rules
 
 - 2–8 players join a shop. The shopkeeper starts the game once at least two players are in the room. The whole crew sees a short shift briefing before service starts.
-- Each game brings three animated ghost customers to the counter. Every customer gives a clear order ticket, and the crew checks its shared pantry before preparing a dish.
+- Each game brings nine animated ghost customers to the counter across three levels: Twilight Shift, Midnight Rush, and Witching Hour. Every customer gives a clear order ticket, and the crew checks its shared pantry before preparing a dish.
 - Each player sends one kitchen ticket. When the whole crew is ready, the most popular dish is served to the waiting customer. A split kitchen slows the shop down.
 - Happy customers tip each cook who ordered the right dish, calm the haunt meter, and restock one ingredient.
-- A wrong delivery raises the haunt meter by two and uses the chosen recipe’s ingredients. A tie raises it by one.
-- The crew wins if they finish three orders before the haunt meter reaches five. The player with the most stars wins the shop’s bragging rights.
+- A wrong delivery uses the chosen recipe’s ingredients and raises the haunt meter by two, three, or four depending on the level. A tie raises it by one, two, or three. The night gets riskier at each level.
+- The crew wins if they finish all nine orders before the haunt meter reaches five. The player with the most stars wins the shop’s bragging rights.
 
 ## Run locally
 
