@@ -1,6 +1,6 @@
 import { getStore } from "@netlify/blobs";
 import type { Context } from "@netlify/functions";
-import { ORDER_DECK } from "../../src/orders.js";
+import { ORDER_DECK, PREP_RECIPES } from "../../src/orders.js";
 
 const store = getStore({ name: "haunted-snack-shop", consistency: "strong" });
 const MAX_PLAYERS = 8;
@@ -41,14 +41,15 @@ function view(room: any, playerId: string) {
     totalRounds: TOTAL_ROUNDS,
     haunt: room.haunt,
     pantry: room.pantry,
-    players: room.players.map((p: any) => ({ name: p.name, stars: p.stars, isHost: p.id === room.hostId, online: p.online, voted: Boolean(round?.votes?.[p.id]) })),
+    players: room.players.map((p: any) => ({ name: p.name, stars: p.stars, isHost: p.id === room.hostId, online: p.online, voted: Boolean(round?.prep?.[p.id]?.done ?? round?.votes?.[p.id]) })),
     round: round ? {
       ghost: round.order.ghost,
       icon: round.order.icon,
       request: round.order.request,
       options: round.order.options,
-      votesIn: Object.keys(round.votes).length,
+      votesIn: Object.values(round.prep || {}).filter((p: any) => p.done).length,
       vote: round.votes[playerId] ?? null,
+      prep: round.prep?.[playerId] ?? { ingredients: [], station: null, finish: null, done: false },
       result: round.result
     } : null,
     error: null
@@ -102,7 +103,7 @@ function resolve(room: any) {
 function setupRound(room: any, roundIndex: number) {
   const order = room.deck[roundIndex];
   room.roundNumber = roundIndex + 1;
-  room.round = { order, votes: {}, result: null };
+  room.round = { order, votes: {}, prep: {}, result: null };
   room.status = "playing";
 }
 
@@ -194,16 +195,33 @@ export default async (req: Request, _context: Context) => {
         room.status = "playing";
         return view(room, playerId);
       }
-      if (action === "serve") {
+      if (action === "prep") {
         if (room.status !== "playing") fail("The kitchen ticket window is closed.", 409);
-        if (room.round.votes[playerId]) fail("Your kitchen ticket is already in.", 409);
-        const chosen = room.round.order.options.find((o: any) => o.id === body.choice);
-        if (!chosen) fail("Choose a dish from the kitchen menu.");
-        for (const [key, amount] of Object.entries(chosen.cost)) {
-          if (room.pantry[key] < (amount as number)) fail("The pantry is short on ingredients for that snack.", 409);
+        room.round.prep ||= {};
+        const progress = room.round.prep[playerId] ||= { ingredients: [], station: null, finish: null, done: false };
+        if (progress.done) fail("Your order is already cooking.", 409);
+        const { kind, value } = body;
+        if (kind === "ingredient") {
+          if (progress.ingredients.length >= 2) fail("The mixing bowl is ready for the stove.", 409);
+          if (!(value in pantryStart) || room.pantry[value] < 1) fail("That ingredient is out of stock.", 409);
+          progress.ingredients.push(value);
+        } else if (kind === "station") {
+          if (progress.ingredients.length !== 2 || progress.station) fail("Add two ingredients before choosing a station.", 409);
+          if (!["stove", "oven", "mixer", "kettle"].includes(value)) fail("Choose a kitchen station.");
+          progress.station = value;
+        } else if (kind === "finish") {
+          if (!progress.station || progress.finish) fail("Choose a station before finishing the dish.", 409);
+          if (!["bake", "chill", "crunch", "dip", "dust", "fizz", "pop", "steep"].includes(value)) fail("Choose how to finish the order.");
+          progress.finish = value;
+          const ingredients = [...progress.ingredients].sort().join("+");
+          const recipe = Object.entries(PREP_RECIPES).find(([, prep]: any) => [...prep.ingredients].sort().join("+") === ingredients && prep.station === progress.station && prep.finish === value);
+          const chosen = recipe && room.round.order.options.some((o: any) => o.id === recipe[0]) ? recipe[0] : "mystery";
+          progress.done = true;
+          room.round.votes[playerId] = chosen;
+          if (Object.values(room.round.prep).filter((p: any) => p.done).length === room.players.length) resolve(room);
+        } else {
+          fail("That kitchen action is not available.");
         }
-        room.round.votes[playerId] = chosen.id;
-        if (Object.keys(room.round.votes).length === room.players.length) resolve(room);
         return view(room, playerId);
       }
       if (action === "next") {
@@ -227,4 +245,3 @@ export default async (req: Request, _context: Context) => {
     return json({ error: error?.message || "The ghosts are having trouble. Try again." }, error?.status || 500);
   }
 };
-
