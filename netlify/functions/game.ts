@@ -5,6 +5,7 @@ import { ORDER_DECK } from "../../src/orders.js";
 const store = getStore({ name: "haunted-snack-shop", consistency: "strong" });
 const MAX_PLAYERS = 8;
 const MAX_TRIES = 12;
+const TOTAL_ROUNDS = 9;
 const pantryStart = { moonmilk: 4, sugar: 4, ectoplasm: 4, spice: 4 };
 
 function json(data: unknown, status = 200) {
@@ -37,7 +38,7 @@ function view(room: any, playerId: string) {
     status: room.status,
     isHost: room.hostId === playerId,
     roundNumber: room.roundNumber,
-    totalRounds: 3,
+    totalRounds: TOTAL_ROUNDS,
     haunt: room.haunt,
     pantry: room.pantry,
     players: room.players.map((p: any) => ({ name: p.name, stars: p.stars, isHost: p.id === room.hostId, online: p.online, voted: Boolean(round?.votes?.[p.id]) })),
@@ -83,7 +84,8 @@ function resolve(room: any) {
     room.pantry[round.order.restock] += 1;
     room.round.result = { success: true, tied: false, chosen, recipe: option.name, message: `${round.order.ghost} loved the order! The kitchen earned a tip and the pantry restocked.` };
   } else {
-    room.haunt = Math.min(5, room.haunt + (tied ? 1 : 2));
+    const level = Math.ceil(room.roundNumber / 3);
+    room.haunt = Math.min(5, room.haunt + (tied ? level : level + 1));
     if (option) Object.keys(option.cost).forEach((key) => { room.pantry[key] = Math.max(0, room.pantry[key] - option.cost[key]); });
     room.round.result = {
       success: false,
@@ -91,7 +93,7 @@ function resolve(room: any) {
       chosen,
       recipe: option?.name ?? null,
       answer: round.order.options.find((o: any) => o.id === round.order.answer)?.name,
-      message: tied ? "A tie! Nobody could decide, and the shop grew a little spookier." : `${round.order.ghost} could not eat that order. The wrong dish used up pantry supplies.`
+          message: tied ? `A tie! Nobody could decide, and the shop grew spookier (haunt +${level}).` : `${round.order.ghost} could not eat that order. The wrong dish used pantry supplies (haunt +${level + 1}).`
     };
   }
   room.status = "result";
@@ -178,7 +180,7 @@ export default async (req: Request, _context: Context) => {
         host(room, playerId);
         if (room.status !== "lobby") fail("The game has already started.", 409);
         if (room.players.length < 2) fail("Invite at least one more player before starting.");
-        room.deck = [...ORDER_DECK].sort(() => Math.random() - 0.5).slice(0, 3);
+        room.deck = [...ORDER_DECK].sort(() => Math.random() - 0.5).slice(0, TOTAL_ROUNDS);
         room.players.forEach((p: any) => { p.stars = 0; });
         room.haunt = 0;
         room.pantry = { ...pantryStart };
@@ -207,7 +209,7 @@ export default async (req: Request, _context: Context) => {
       if (action === "next") {
         host(room, playerId);
         if (room.status !== "result") fail("Finish the current order first.", 409);
-        if (room.roundNumber >= 3 || room.haunt >= 5) {
+        if (room.roundNumber >= TOTAL_ROUNDS || room.haunt >= 5) {
           room.status = "finished";
           return view(room, playerId);
         }
