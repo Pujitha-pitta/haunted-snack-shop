@@ -38,3 +38,57 @@
 @keyframes lantern-wink{from{opacity:.65;transform:scale(.92)}to{opacity:1;transform:scale(1.1)}}
 @media(max-width:520px){.shop-scene{height:192px}.scene-window{top:74px;width:18%;height:54px}.scene-door{left:29%;height:78px;width:47px}.walking-ghost{font-size:36px;bottom:36px}.scene-counter{right:5%;padding:9px 7px 8px;min-width:27%}.scene-counter i{font-size:13px}.shop-sign{padding:5px 11px;font-size:8px}.awning{top:37px;height:17px}.lantern-left{left:24%}.lantern-right{right:24%}}
 
+/* Turn the order screen into a playful cooking-game scene. */
+.shop-scene{height:250px;border-width:4px;border-radius:20px;background:linear-gradient(180deg,#6558b7 0 12%,#f7bd82 12% 74%,#e5a0c1 74% 100%);box-shadow:inset 0 -8px #a95c9c,0 7px 0 #493664,0 14px 26px #0004}
+.shop-scene:before{inset:57px 0 31px;background:radial-gradient(circle at 50% 20%,#fff6c9 0 4px,transparent 5px),linear-gradient(180deg,#ffe9a7,#ffca9a 64%,#ed9db0);background-size:48px 48px,auto;animation:shop-sparkle 5s linear infinite}
+.shop-scene:after{height:37px;bottom:0;border-top:4px solid #ffebad;background:repeating-linear-gradient(90deg,#8956a2 0 32px,#aa71b5 32px 64px)}
+.shop-sign{top:8px;border:3px solid #864e97;border-radius:12px;background:linear-gradient(#fff3bf,#ffd26e);box-shadow:0 4px #734481,0 7px 10px #57345a45;font-size:10px}
+.awning{top:40px;height:22px;border:3px solid #fff1bf;background:repeating-linear-gradient(90deg,#ee7184 0 30px,#fff0b5 30px 60px);box-shadow:0 5px #aa608e}
+.scene-window{top:82px;height:78px;border:5px solid #fff1bf;border-radius:15px;background:linear-gradient(145deg,#97e9e5,#8ac4f1);box-shadow:inset 0 0 0 3px #dc83b0,0 5px #a25b93,0 8px 12px #653f7c44}
+.scene-window:before,.scene-window:after{background:#fff0bf}
+.scene-door{bottom:32px;height:105px;border-width:4px;border-color:#fff1bf;border-radius:29px 29px 0 0;box-shadow:inset 8px 0 #cf90bd,0 0 0 4px #a05fa2}
+.scene-door span{top:-20px;box-shadow:0 2px #a15b90}
+.walking-ghost{font-size:48px;filter:drop-shadow(0 7px 2px #80529255)}
+.walking-ghost:after{width:34px;height:9px;bottom:-11px;animation:ghost-shadow 1.1s ease-in-out infinite alternate}
+.shop-scene.arriving .walking-ghost{animation:customer-walk-in 2.1s cubic-bezier(.2,.75,.25,1) both,ghost-bob .42s ease-in-out infinite alternate}
+.scene-counter{bottom:32px;border-width:4px;border-radius:14px 14px 4px 4px;padding:12px 13px 10px;box-shadow:0 7px 0 #573b74,0 11px 15px #50355855}
+.scene-counter span{font-size:20px;animation:bell-ring 2.8s ease-in-out infinite}
+.scene-lantern{font-size:20px}
+.order-heading{padding:5px 2px 0}
+.order-heading .ghost-avatar{border-radius:16px;background:linear-gradient(145deg,#795bb0,#e788a2);border:3px solid #f7d38c;box-shadow:0 4px #583b71}
+.order-ticket{border:2px solid #f4c275;background:#332744;color:#ffe5a0;border-radius:8px}
+.order-slip{position:relative;border:2px solid #f3bd74;border-radius:14px;padding:17px 17px 15px 22px;background:linear-gradient(120deg,#493154,#281f39);box-shadow:0 5px #1b1727,inset 7px 0 #e99b75}
+.order-slip:after{content:"💬";position:absolute;right:14px;top:-14px;font-size:24px;filter:drop-shadow(0 3px #342140)}
+.order-slip p{max-width:92%;font-size:16px;font-weight:600}
+.slip-label{color:#ffd579}
+.menu-head{margin:22px 0 12px;padding:13px 14px;border-radius:12px;background:linear-gradient(90deg,#6b4c94,#8e5caa);border:2px solid #c896cb;box-shadow:0 4px #47365e}
+.menu-head .section-kicker{color:#fff1ba}
+.menu-head p{color:#f8dbea}
+.vote-count{color:#ffdf84}
+.vote-count small{color:#f0d4e8}
+.snack-menu{grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.snack-option{position:relative;min-height:156px;padding:13px 8px 11px;overflow:hidden;flex-direction:column;justify-content:center;gap:8px;text-align:center;border:3px solid #fff0c5;border-radius:17px;background:linear-gradient(160deg,#7d68be,#534b92);box-shadow:0 6px #373465,0 10px 16px #0003;transition:transform .18s,border-color .18s,filter .18s}
+.snack-option:nth-child(2){background:linear-gradient(160deg,#db8d7e,#995a9b)}
+.snack-option:nth-child(3){background:linear-gradient(160deg,#57b5ad,#3c777f)}
+.snack-option:before{content:"";position:absolute;width:94px;height:94px;top:-46px;right:-37px;border-radius:50%;background:#fff4c326}
+.snack-option:hover:not(:disabled){transform:translateY(-5px) rotate(-1deg);border-color:#fff;background:linear-gradient(160deg,#9d83d7,#665ca5);filter:brightness(1.12)}
+.snack-option:nth-child(2):hover:not(:disabled){background:linear-gradient(160deg,#f5ad91,#bb72b0)}
+.snack-option:nth-child(3):hover:not(:disabled){background:linear-gradient(160deg,#72d2c6,#4b9699)}
+.snack-icon{font-size:41px;line-height:1;filter:drop-shadow(0 4px 1px #30284b66);animation:dish-bob 2.4s ease-in-out infinite}
+.snack-option:nth-child(2) .snack-icon{animation-delay:.35s}.snack-option:nth-child(3) .snack-icon{animation-delay:.7s}
+.snack-copy{gap:4px;width:100%;flex:0}
+.snack-copy b{font-size:11px;line-height:1.3;color:#fff8e8}
+.snack-copy small{font-size:8px;color:#f2dceb}
+.snack-arrow{align-self:center;padding:5px 12px;border:1px solid #ffe8a2;border-radius:20px;background:#ffe087;color:#5b4268;font:800 8px "Space Grotesk",sans-serif;letter-spacing:.1em;box-shadow:0 2px #bd7b75}
+.snack-option.selected{border-color:#aaffc9;background:linear-gradient(160deg,#72c895,#397f83);box-shadow:0 6px #306b67,0 0 0 3px #aaffc944}
+.snack-option.selected .snack-arrow{background:#b0f2c8;border-color:#e3ffda;color:#315d59}
+.snack-option.unavailable{filter:grayscale(.7);opacity:.55}
+.button-note{margin:13px 0 0;color:#dfcddd;text-align:center}
+.order-card{background:linear-gradient(145deg,#302541,#211c32);border:2px solid #5b466f;border-radius:21px;box-shadow:0 14px 35px #0004}
+@keyframes dish-bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-5px) rotate(3deg)}}
+@keyframes ghost-bob{from{margin-bottom:0}to{margin-bottom:4px}}
+@keyframes ghost-shadow{from{transform:translateX(-50%) scale(.85);opacity:.4}to{transform:translateX(-50%) scale(1.1);opacity:.7}}
+@keyframes bell-ring{0%,90%,100%{transform:rotate(0)}92%{transform:rotate(-13deg)}95%{transform:rotate(11deg)}98%{transform:rotate(-6deg)}}
+@keyframes shop-sparkle{0%{background-position:0 0,0 0}100%{background-position:48px 0,0 0}}
+@media(max-width:520px){.shop-scene{height:210px}.scene-window{height:64px}.scene-door{height:89px}.shop-sign{font-size:8px}.snack-menu{gap:6px}.snack-option{min-height:143px;padding:10px 4px 9px;border-width:2px;border-radius:13px}.snack-icon{font-size:32px}.snack-copy b{font-size:9px}.snack-copy small{font-size:7px}.snack-arrow{padding:5px 7px;font-size:7px}.order-slip p{font-size:13px}}
+
