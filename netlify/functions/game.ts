@@ -55,7 +55,7 @@ function view(room: any, playerId: string) {
     haunt: room.haunt,
     streak: room.streak || 0,
     pantry: room.pantry,
-    players: room.players.map((p: any) => ({ name: p.name, stars: p.stars, isHost: p.id === room.hostId, online: p.online, voted: Boolean(round?.prep?.[p.id]?.done ?? round?.votes?.[p.id]) })),
+    players: room.players.map((p: any) => ({ name: p.name, stars: p.stars, isHost: p.id === room.hostId, online: p.online, voted: Boolean(round?.prep?.contributors?.includes(p.id)) })),
     round: round ? {
       ghost: round.order.ghost,
       icon: round.order.icon,
@@ -65,9 +65,9 @@ function view(room: any, playerId: string) {
       queue: (room.deck || []).slice(room.roundNumber, room.roundNumber + 2).map((order: any) => ({ icon: order.icon })),
       surprise: round.surprise ? { ...round.surprise, claimed: Boolean(round.surprise.claimedBy), claimedBy: undefined } : null,
       options: round.order.options,
-      votesIn: Object.values(round.prep || {}).filter((p: any) => p.done).length,
+      votesIn: round.prep?.contributors?.length || 0,
       vote: round.votes[playerId] ?? null,
-      prep: round.prep?.[playerId] ?? { ingredients: [], station: null, finish: null, done: false },
+      prep: Array.isArray(round.prep?.ingredients) ? round.prep : { ingredients: [], station: null, finish: null, contributors: [], done: false },
       result: round.result
     } : null,
     error: null
@@ -95,7 +95,7 @@ function resolve(room: any) {
   const correct = chosen === round.order.answer;
   const option = round.order.options.find((o: any) => o.id === chosen);
   const cookId = Object.keys(round.votes).find((id) => round.votes[id] === chosen) || Object.keys(round.votes)[0];
-  const cook = round.prep?.[cookId];
+  const cook = round.prep?.[cookId] ?? round.prep;
   const usedIngredients = option?.cost ?? (cook?.ingredients || []).reduce((cost: any, key: string) => { cost[key] = (cost[key] || 0) + 1; return cost; }, {});
   Object.entries(usedIngredients).forEach(([key, amount]: any) => { room.pantry[key] = Math.max(0, room.pantry[key] - amount); });
 
@@ -133,7 +133,7 @@ function setupRound(room: any, roundIndex: number) {
     { title: "A lucky moon-cookie appeared!", prompt: "Grab the floating cookie before the ghosts spot it. First cook to tap it earns a bonus tip and calms the haunt.", icon: "🍪" }
   ];
   const surprise = surprises[Math.floor(Math.random() * surprises.length)];
-  room.round = { order, votes: {}, prep: {}, result: null, deadlineAt: null, surprise: { ...surprise, claimedBy: null } };
+  room.round = { order, votes: {}, prep: { ingredients: [], station: null, finish: null, contributors: [], done: false }, result: null, deadlineAt: null, surprise: { ...surprise, claimedBy: null } };
   room.status = "playing";
 }
 
@@ -249,9 +249,9 @@ export default async (req: Request, _context: Context) => {
       if (room.status === "result" && action !== "next") return view(room, playerId);
       if (action === "prep") {
         if (room.status !== "playing") fail("The kitchen ticket window is closed.", 409);
-        room.round.prep ||= {};
-        const progress = room.round.prep[playerId] ||= { ingredients: [], station: null, finish: null, done: false };
-        if (progress.done) fail("Your order is already cooking.", 409);
+        if (!Array.isArray(room.round.prep?.ingredients)) room.round.prep = { ingredients: [], station: null, finish: null, contributors: [], done: false };
+        const progress = room.round.prep;
+        if (progress.done) fail("This order has already been served.", 409);
         const { kind, value } = body;
         if (kind === "ingredient") {
           if (progress.ingredients.length >= 2) fail("The mixing bowl is ready for the stove.", 409);
@@ -269,11 +269,12 @@ export default async (req: Request, _context: Context) => {
           const recipe = Object.entries(PREP_RECIPES).find(([, prep]: any) => [...prep.ingredients].sort().join("+") === ingredients && prep.station === progress.station && prep.finish === value);
           const chosen = recipe && room.round.order.options.some((o: any) => o.id === recipe[0]) ? recipe[0] : "mystery";
           progress.done = true;
-          room.round.votes[playerId] = chosen;
-          if (Object.values(room.round.prep).filter((p: any) => p.done).length === room.players.length) resolve(room);
+          room.round.votes = Object.fromEntries(room.players.map((cook: any) => [cook.id, chosen]));
+          resolve(room);
         } else {
           fail("That kitchen action is not available.");
         }
+        if (!progress.contributors.includes(playerId)) progress.contributors.push(playerId);
         return view(room, playerId);
       }
       if (action === "surprise") {
