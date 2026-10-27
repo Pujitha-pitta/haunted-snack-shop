@@ -66,7 +66,7 @@ function view(room: any, playerId: string) {
       surprise: round.surprise ? { ...round.surprise, claimed: Boolean(round.surprise.claimedBy), claimedBy: undefined } : null,
       options: round.order.options,
       votesIn: round.prep?.contributors?.length || 0,
-      vote: round.votes[playerId] ?? null,
+      vote: round.prep?.done ? round.votes[playerId] ?? null : null,
       prep: Array.isArray(round.prep?.ingredients) ? round.prep : { ingredients: [], station: null, finish: null, contributors: [], done: false },
       result: round.result
     } : null,
