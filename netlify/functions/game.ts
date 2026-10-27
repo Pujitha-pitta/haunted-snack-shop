@@ -2,7 +2,6 @@ import { getStore } from "@netlify/blobs";
 import type { Context } from "@netlify/functions";
 import { ORDER_DECK, PANTRY_NAMES, PREP_RECIPES } from "../../src/orders.js";
 
-const store = getStore({ name: "haunted-snack-shop", consistency: "strong" });
 const MAX_PLAYERS = 8;
 const MAX_TRIES = 12;
 const TOTAL_ROUNDS = 9;
@@ -155,7 +154,7 @@ function expireOrder(room: any) {
   room.status = "result";
 }
 
-async function mutate(code: string, callback: (room: any) => unknown) {
+async function mutate(store: ReturnType<typeof getStore>, code: string, callback: (room: any) => unknown) {
   for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
     const current = await store.getWithMetadata(code, { consistency: "strong", type: "json" });
     if (!current) fail("Room not found. Check the code and try again.", 404);
@@ -173,6 +172,9 @@ async function mutate(code: string, callback: (room: any) => unknown) {
 export default async (req: Request, _context: Context) => {
   try {
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: { "access-control-allow-origin": "*", "access-control-allow-methods": "GET,POST,OPTIONS", "access-control-allow-headers": "content-type" } });
+    // Netlify injects the Blobs credentials into each function invocation. Create
+    // the client here so a warm instance never keeps an expired invocation token.
+    const store = getStore({ name: "haunted-snack-shop", consistency: "strong" });
     if (req.method === "GET") {
       const code = (new URL(req.url).searchParams.get("room") || "").toUpperCase();
       const playerId = new URL(req.url).searchParams.get("player") || "";
@@ -212,7 +214,7 @@ export default async (req: Request, _context: Context) => {
       const name = cleanName(body.name);
       if (!name) fail("Add your name first.");
       const id = newId();
-      const result = await mutate(code, (room) => {
+      const result = await mutate(store, code, (room) => {
         if (room.status !== "lobby") fail("This game has already started.", 409);
         if (room.players.length >= MAX_PLAYERS) fail("This shop is full (8 players max).", 409);
         room.players.push({ id, name, stars: 0, online: true });
@@ -222,7 +224,7 @@ export default async (req: Request, _context: Context) => {
     }
 
     if (!playerId) fail("Rejoin this room from the same device.", 403);
-    const result = await mutate(code, (room) => {
+    const result = await mutate(store, code, (room) => {
       const me = player(room, playerId);
       if (room.status === "playing") expireOrder(room);
       if (action === "get") return view(room, playerId);
