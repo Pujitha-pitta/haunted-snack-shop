@@ -150,7 +150,7 @@ function playingView() {
     </section>
     ${surprise ? `<section class="surprise-event ${surprise.claimed ? "caught" : ""}"><div class="surprise-icon">${safe(surprise.icon)}</div><div class="surprise-copy"><b>${safe(surprise.claimed ? "Bonus caught! +1 tip" : surprise.title)}</b><p>${safe(surprise.claimed ? "The haunt calmed down." : surprise.prompt)}</p></div><button class="surprise-catch" data-action="surprise" ${surprise.claimed || voted ? "disabled" : ""}>${surprise.claimed ? "CAUGHT ✓" : "GRAB IT!"}</button></section>` : ""}
     <section class="rush-controls"><div class="rush-control-heading"><div><span class="rush-overline">${voted ? "TICKET COMPLETE" : safe(stage.toUpperCase())}</span><h2>${voted ? "Order on its way!" : safe(hint.split(".")[0])}</h2><p>${voted ? "The customer is enjoying the treat. Your crew is on it!" : "Tap a big kitchen button to keep this order moving."}</p></div><div class="rush-cooks">👩‍🍳 <b>${r.votesIn}</b><small>COOKS HELPING</small></div></div>${prepSummary}<div class="rush-actions">${options}</div>${voted ? `<div class="rush-served-note"><span>✨</span>Order served! The customer is enjoying their treat.</div>` : `<p class="rush-sync-note">🔄&nbsp; Shared kitchen — every cook’s tap appears here instantly</p>`}</section>
-  </article>`);
+  </article>`, true);
 }
 
 function resultView() {
