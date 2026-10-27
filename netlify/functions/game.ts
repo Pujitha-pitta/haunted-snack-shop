@@ -53,6 +53,7 @@ function view(room: any, playerId: string) {
     roundNumber: room.roundNumber,
     totalRounds: TOTAL_ROUNDS,
     haunt: room.haunt,
+    streak: room.streak || 0,
     pantry: room.pantry,
     players: room.players.map((p: any) => ({ name: p.name, stars: p.stars, isHost: p.id === room.hostId, online: p.online, voted: Boolean(round?.prep?.[p.id]?.done ?? round?.votes?.[p.id]) })),
     round: round ? {
@@ -60,6 +61,8 @@ function view(room: any, playerId: string) {
       icon: round.order.icon,
       request: round.order.request,
       prepHint: prepInstructions(round.order),
+      deadlineAt: round.deadlineAt || null,
+      queue: (room.deck || []).slice(room.roundNumber, room.roundNumber + 2).map((order: any) => ({ icon: order.icon })),
       surprise: round.surprise ? { ...round.surprise, claimed: Boolean(round.surprise.claimedBy), claimedBy: undefined } : null,
       options: round.order.options,
       votesIn: Object.values(round.prep || {}).filter((p: any) => p.done).length,
@@ -97,13 +100,16 @@ function resolve(room: any) {
   Object.entries(usedIngredients).forEach(([key, amount]: any) => { room.pantry[key] = Math.max(0, room.pantry[key] - amount); });
 
   if (correct) {
+    room.streak = (room.streak || 0) + 1;
+    const streakBonus = Math.floor(room.streak / 3);
     room.players.forEach((p: any) => {
-      if (round.votes[p.id] === chosen) p.stars += 1;
+      if (round.votes[p.id] === chosen) p.stars += 1 + streakBonus;
     });
     room.haunt = Math.max(0, room.haunt - 1);
     room.pantry[round.order.restock] += 1;
-    room.round.result = { success: true, tied: false, chosen, recipe: option.name, message: `${round.order.ghost} loved the order! The kitchen earned a tip and the pantry restocked.` };
+    room.round.result = { success: true, tied: false, chosen, recipe: option.name, message: `${round.order.ghost} loved the order! The kitchen earned a tip and the pantry restocked.${room.streak >= 2 ? ` ${room.streak}-order service streak!` : ""}${streakBonus ? ` +${streakBonus} streak tip!` : ""}` };
   } else {
+    room.streak = 0;
     const level = Math.ceil(room.roundNumber / 3);
     room.haunt = Math.min(5, room.haunt + (tied ? level : level + 1));
     room.round.result = {
@@ -127,8 +133,26 @@ function setupRound(room: any, roundIndex: number) {
     { title: "A lucky moon-cookie appeared!", prompt: "Grab the floating cookie before the ghosts spot it. First cook to tap it earns a bonus tip and calms the haunt.", icon: "🍪" }
   ];
   const surprise = surprises[Math.floor(Math.random() * surprises.length)];
-  room.round = { order, votes: {}, prep: {}, result: null, surprise: { ...surprise, claimedBy: null } };
+  room.round = { order, votes: {}, prep: {}, result: null, deadlineAt: null, surprise: { ...surprise, claimedBy: null } };
   room.status = "playing";
+}
+
+function patienceMs(roundNumber: number) {
+  const level = Math.ceil(roundNumber / 3);
+  return Math.max(60000, 90000 - (level - 1) * 15000);
+}
+
+function expireOrder(room: any) {
+  if (room.status !== "playing" || !room.round?.deadlineAt || Date.now() < room.round.deadlineAt) return;
+  const level = Math.ceil(room.roundNumber / 3);
+  room.haunt = Math.min(5, room.haunt + level);
+  room.streak = 0;
+  room.round.result = {
+    success: false, tied: false, rushed: true,
+    answer: room.round.order.options.find((o: any) => o.id === room.round.order.answer)?.name,
+    message: `${room.round.order.ghost} got tired of waiting and floated out! The haunt rose by ${level}.`
+  };
+  room.status = "result";
 }
 
 async function mutate(code: string, callback: (room: any) => unknown) {
@@ -170,7 +194,7 @@ export default async (req: Request, _context: Context) => {
       for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
         const code = makeRoomCode();
         const room = {
-          code, status: "lobby", hostId: playerId, roundNumber: 0, haunt: 0,
+          code, status: "lobby", hostId: playerId, roundNumber: 0, haunt: 0, streak: 0,
           pantry: { ...pantryStart }, deck: [], round: null,
           players: [{ id: playerId, name, stars: 0, online: true }], createdAt: Date.now()
         };
@@ -200,6 +224,7 @@ export default async (req: Request, _context: Context) => {
     if (!playerId) fail("Rejoin this room from the same device.", 403);
     const result = await mutate(code, (room) => {
       const me = player(room, playerId);
+      if (room.status === "playing") expireOrder(room);
       if (action === "get") return view(room, playerId);
       if (action === "start") {
         host(room, playerId);
@@ -208,6 +233,7 @@ export default async (req: Request, _context: Context) => {
         room.deck = [...ORDER_DECK].sort(() => Math.random() - 0.5).slice(0, TOTAL_ROUNDS);
         room.players.forEach((p: any) => { p.stars = 0; });
         room.haunt = 0;
+        room.streak = 0;
         room.pantry = { ...pantryStart };
         setupRound(room, 0);
         room.status = "instructions";
@@ -217,8 +243,10 @@ export default async (req: Request, _context: Context) => {
         host(room, playerId);
         if (room.status !== "instructions") fail("The shift briefing is already complete.", 409);
         room.status = "playing";
+        room.round.deadlineAt = Date.now() + patienceMs(room.roundNumber);
         return view(room, playerId);
       }
+      if (room.status === "result" && action !== "next") return view(room, playerId);
       if (action === "prep") {
         if (room.status !== "playing") fail("The kitchen ticket window is closed.", 409);
         room.round.prep ||= {};
@@ -264,6 +292,7 @@ export default async (req: Request, _context: Context) => {
           return view(room, playerId);
         }
         setupRound(room, room.roundNumber);
+        room.round.deadlineAt = Date.now() + patienceMs(room.roundNumber);
         return view(room, playerId);
       }
       if (action === "rejoin") {
