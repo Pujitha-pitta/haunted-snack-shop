@@ -68,8 +68,8 @@ function gameFrame(content, active = false) {
       <div class="rush-main">
         <header class="rush-toolbar">
           <div class="rush-room"><span class="rush-lantern">☾</span><span><small>MOONLIGHT DINER · ROOM</small><b>${room.code}</b></span><button class="copy-button" data-action="copy">INVITE +</button></div>
-          <div class="rush-level"><span>LEVEL ${level}</span><b>${LEVELS[level - 1]}</b><div class="rush-progress">${Array.from({ length: 9 }, (_, i) => `<i class="${i < room.roundNumber ? "served" : ""} ${i === room.roundNumber - 1 ? "now" : ""}"></i>`).join("")}</div></div>
-          <div class="rush-score"><span>✦ <b>${teamTips}</b><small>TIPS</small></span><span>🔥 <b>${room.streak || 0}</b><small>STREAK</small></span><span class="rush-haunt">👻 <b>${haunt}/5</b><small>HAUNT</small></span></div>
+          <div class="rush-level"><span>LEVEL ${level}</span><b>${LEVELS[level - 1]}</b><div class="rush-progress" aria-label="Customer progress">${Array.from({ length: 9 }, (_, i) => `<i class="${i < room.roundNumber - 1 ? "served" : ""} ${i === room.roundNumber - 1 ? "now" : ""}"></i>`).join("")}</div><small class="rush-customer-count">CUSTOMERS ${Math.max(0, room.roundNumber - 1)}/${room.totalRounds || 9}</small></div>
+          <div class="rush-score"><span>🪙 <b>${teamTips}</b><small>TIPS</small></span><span>🔥 <b>×${Math.max(1, room.streak || 0)}</b><small>COMBO</small></span><span class="rush-haunt">👻 <b>${haunt}/5</b><small>HAUNT</small></span></div>
         </header>
         ${content}
         <div class="rush-footer"><div class="rush-crew"><span class="rush-crew-title">YOUR CREW</span>${room.players.map((p) => `<span class="rush-player" title="${safe(p.name)}">👩‍🍳 ${safe(p.name)} <b>${p.stars}✦</b></span>`).join("")}</div><div class="rush-pantry"><b>SHARED PANTRY</b>${Object.entries(PANTRY_NAMES).map(([key, label]) => `<span title="${label}">${{ moonmilk: "🥛", sugar: "🍚", ectoplasm: "🧪", spice: "✨" }[key]} ${room.pantry[key] ?? 0}</span>`).join("")}</div></div>
