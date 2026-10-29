@@ -21,3 +21,9 @@ This project is configured for Netlify Functions and Netlify Blobs. Connect this
 
 The game page calls `/.netlify/functions/game` directly. The production backend must run on Netlify for room creation and shared gameplay to work.
 
+## Cloudflare migration
+
+The parallel Cloudflare Worker backend is in `worker/index.ts`. It keeps each room in its own SQLite-backed Durable Object, so game state is strongly consistent and does not require Netlify Blobs. The Worker serves the Vite build and supports both the existing function URL and `/api/game` during migration.
+
+To deploy it, connect this repository to Cloudflare Workers Builds, keep the project root at the repository root, and use `npm run deploy:cloudflare` as the deploy command. The `wrangler.jsonc` file configures the static asset binding and the `GameRoom` Durable Object. Cloudflare will prompt you to authorize GitHub repository access before it can build on pushes.
+
