@@ -259,9 +259,11 @@ async function handleGameRequest(req: Request, storage: any) {
         const station = room.stations[String(body.station || "")];
         if (!station || station.status !== "prepping") fail("Choose a station with food being prepared.", 409);
         const dish = MENU[station.item as keyof typeof MENU];
-        if (!dish || station.prepStep >= dish.prep.length) fail("That recipe is already cooking.", 409);
+        const prepSteps = dish?.prep || ["Prepare the ingredients"];
+        station.prepStep = Math.max(0, Number(station.prepStep) || 0);
+        if (!dish || station.prepStep >= prepSteps.length) fail("That recipe is already cooking.", 409);
         station.prepStep += 1;
-        if (station.prepStep >= dish.prep.length) {
+        if (station.prepStep >= prepSteps.length) {
           const stationId = MENU[station.item as keyof typeof MENU].station;
           const speed = Math.max(0.55, 1 - 0.15 * (room.upgrades[stationId] || 0));
           const startedAt = Date.now();
@@ -270,7 +272,7 @@ async function handleGameRequest(req: Request, storage: any) {
           station.readyAt = startedAt + Math.round(dish.seconds * speed * 1000);
           room.lastEvent = dish.name + " is cooking. Watch the station!";
         } else {
-          room.lastEvent = me.name + " · " + dish.pre[station.prepStep - 1] + "!";
+          room.lastEvent = me.name + " · " + prepSteps[station.prepStep - 1] + "!";
         }
         return view(room, playerId);
       }
