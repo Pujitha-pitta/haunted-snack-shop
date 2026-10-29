@@ -94,6 +94,10 @@ function stationCard(id) {
   let stage = "READY FOR A DISH";
   if (station.status === "cooking") {
     stage = "COOKING · WATCH THE CLOCK";
+  } else if (station.status === "prepping") {
+    const step = item?.prep?.[station.prepStep] || "Recipe ready";
+    stage = `PREP ${station.prepStep + 1}/${item.prep.length} · ${safe(step).toUpperCase()}`;
+    action = `<button class="station-action prep-action" data-action="ingredient" data-station="${id}">ADD INGREDIENT →</button>`;
   } else if (station.status === "ready") {
     stage = "READY! COLLECT BEFORE IT BURNS";
     action = `<button class="station-action collect-action" data-action="collect" data-station="${id}">COLLECT</button>`;
@@ -104,7 +108,7 @@ function stationCard(id) {
   const progress = station.status === "cooking" ? 0 : 100;
   return `<article class="station-card station-${id} ${station.status}">
     <div class="station-topline"><span>${STATIONS[id].icon}</span><small>${STATIONS[id].name.toUpperCase()}</small><b>${upgrade ? "⚡".repeat(upgrade) : ""}</b></div>
-    <div class="station-equipment"><span class="station-fire">${station.status === "cooking" ? "〰" : station.status === "ready" ? "✨" : station.status === "burnt" ? "💨" : "♨"}</span><strong>${item ? item.icon : "🍽️"}</strong></div>
+    <div class="station-equipment"><span class="station-fire">${station.status === "prepping" ? "✨" : station.status === "cooking" ? "〰" : station.status === "ready" ? "✨" : station.status === "burnt" ? "💨" : "♨"}</span><strong>${item ? item.icon : "🍽️"}</strong></div>
     <div class="station-dish">${item ? safe(item.name) : "Empty station"}</div>
     <div class="station-status-text">${stage}</div>
     <div class="station-timer" data-cook-timer data-status="${station.status}" data-start="${station.startedAt || 0}" data-ready="${station.readyAt || 0}" data-burn="${station.burnAt || 0}" data-seconds="${item ? item.seconds : 0}"><span>${station.status === "cooking" ? "00:00" : station.status === "ready" ? "READY" : station.status === "burnt" ? "BURNT" : ""}</span><i style="width:${progress}%"></i></div>
@@ -119,16 +123,16 @@ function kitchenView() {
   const menu = Object.entries(MENU).map(([id, item]) => {
     const status = room.stations[item.station]?.status || "idle";
     const disabled = status !== "idle";
-    return `<button class="menu-tile menu-${id}" data-action="cook" data-item="${id}" ${disabled ? "disabled" : ""}><span class="menu-art">${item.icon}</span><span class="menu-copy"><b>${safe(item.name)}</b><small>${STATIONS[item.station].name} · ${item.seconds} SEC</small></span><span class="menu-tap">${disabled ? status.toUpperCase() : "TAP TO COOK"}</span></button>`;
+    return `<button class="menu-tile menu-${id}" data-action="cook" data-item="${id}" ${disabled ? "disabled" : ""}><span class="menu-art">${item.icon}</span><span class="menu-copy"><b>${safe(item.name)}</b><small>${STATIONS[item.station].name} · ${item.pre.length} prep steps · ${item.seconds} sec cook</small></span><span class="menu-tap">${disabled ? status.toUpperCase() : "PREP THIS DISH"}</span></button>`;
   }).join("");
   return `<section class="arcade-page">
     ${roomTop()}
     <div class="arcade-scene">
       <div class="diner-backdrop"><span class="diner-window">☾<small>OPEN ALL NIGHT</small></span><span class="diner-shelf">🫙 🧂 🌿</span><div class="diner-sign">✦ &nbsp; THE HAUNTED SNACK BAR &nbsp; ✦</div></div>
-      <div class="guest-lane"><div class="guest-lane-label"><span>GHOSTS WALKING IN</span><b>${guests.length}/3 AT THE COUNTER</b></div><div class="ticket-row">${queue || `<div class="empty-queue"><span>👻</span><b>Next customer is on the way…</b></div>`}</div></div>
+      <div class="guest-lane"><div class="guest-lane-label"><span>GHOSTS WALKING IN</span><b>${guests.length}/3 AT THE COUNTER</b></div><div class="walkway" aria-hidden="true"><span class="walking-customer">${guests[0]?.icon || "👻"}</span><span class="walk-dust">⋯</span><span class="walk-sign">NEXT!</span></div><div class="ticket-row">${queue || `<div class="empty-queue"><span>👻</span><b>Next customer is on the way…</b></div>`}</div></div>
       <div class="kitchen-floor"><div class="kitchen-floor-label"><span>YOUR SHARED KITCHEN</span><small>COOK DIFFERENT ORDERS AT THE SAME TIME</small></div><div class="station-grid">${["grill", "fryer", "mixer", "oven"].map(stationCard).join("")}</div></div>
     </div>
-    <section class="cook-panel"><div class="cook-panel-heading"><div><span class="panel-kicker">THE MENU</span><h2>Tap to start cooking</h2><p>Every station runs its own timer. Collect the food before it burns.</p></div><div class="cook-tip">👩‍🍳 <b>${room.players.length}</b><small>COOKS ON SHIFT</small></div></div><div class="menu-grid">${menu}</div></section>
+    <section class="cook-panel"><div class="cook-panel-heading"><div><span class="panel-kicker">THE MENU</span><h2>Prep, cook, then serve</h2><p>Choose a recipe, tap through its ingredient steps, then watch the station and collect it before it burns.</p></div><div class="cook-tip">👩‍🍳 <b>${room.players.length}</b><small>COOKS ON SHIFT</small></div></div><div class="menu-grid">${menu}</div></section>
     <section class="pass-and-crew"><div class="serving-pass"><div class="pass-heading"><span>🍽️ SERVING PASS</span><small>READY TO DELIVER</small></div><div class="pass-items">${ready || `<span class="pass-empty">Fresh food you collect appears here.</span>`}</div></div><div class="crew-panel"><div class="pass-heading"><span>👩‍🍳 YOUR CREW</span><small>${room.players.length}/8</small></div><div class="crew-chips">${playerChips()}</div></div></section>
     <div class="live-callout" role="status"><span class="callout-light"></span><b>${safe(room.lastEvent || "The kitchen is open!")}</b><small>SHARED LIVE WITH YOUR CREW</small></div>
   </section>`;
@@ -284,11 +288,12 @@ app.addEventListener("click", async event => {
   const action = button.dataset.action;
   if (action === "rules") {
     if (!room) document.querySelector("#rules")?.scrollIntoView({ behavior: "smooth" });
-    else toast("Work the four stations, collect dishes when ready, then serve each full ticket.");
+    else toast("Tap a recipe, add each ingredient at its station, collect it after cooking, then serve the complete ticket.");
     return;
   }
   if (action === "copy") { copyInvite(); return; }
   if (action === "cook") { await act("cook", { item: button.dataset.item }); return; }
+  if (action === "ingredient") { await act("ingredient", { station: button.dataset.station }); return; }
   if (action === "collect") { await act("collect", { station: button.dataset.station }); return; }
   if (action === "serve") { await act("serve", { ticketId: button.dataset.ticket }); return; }
   if (action === "upgrade") { await act("upgrade", { station: button.dataset.station }); return; }
@@ -319,3 +324,5 @@ function resume() {
 
 clockHandle = setInterval(updateTimers, 200);
 resume();
+
+
