@@ -5,14 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "deploy:cloudflare": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@netlify/blobs": "^10.0.0"
   },
   "devDependencies": {
     "@netlify/functions": "^3.1.10",
-    "vite": "^6.4.1"
+    "vite": "^6.4.1",
+    "wrangler": "^4.45.0"
   }
 }
 
