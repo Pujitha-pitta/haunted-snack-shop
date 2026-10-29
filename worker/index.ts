@@ -22,7 +22,7 @@ function newId() {
   return crypto.randomUUID();
 }
 function emptyStation() {
-  return { status: "idle", item: null, startedAt: null, readyAt: null, burnAt: null, cookedBy: null };
+  return { status: "idle", item: null, prepStep: 0, startedAt: null, readyAt: null, burnAt: null, cookedBy: null };
 }
 function stationSet() {
   return { grill: emptyStation(), fryer: emptyStation(), mixer: emptyStation(), oven: emptyStation() };
@@ -244,13 +244,34 @@ async function handleGameRequest(req: Request, storage: any) {
         if (station.status !== "idle") fail(STATIONS[dish.station].name + " is busy. Collect or clear its current item first.", 409);
         const speed = Math.max(0.55, 1 - 0.15 * (room.upgrades[dish.station] || 0));
         const startedAt = Date.now();
-        station.status = "cooking";
+        station.status = "prepping";
         station.item = itemId;
         station.startedAt = startedAt;
-        station.readyAt = startedAt + Math.round(dish.seconds * speed * 1000);
+        station.prepStep = 0;
+        station.readyAt = null;
         station.burnAt = null;
         station.cookedBy = playerId;
-        room.lastEvent = me.name + " started " + dish.name + "!";
+        room.lastEvent = me.name + " started preparing " + dish.name + "!";
+        return view(room, playerId);
+      }
+      if (body.action === "ingredient") {
+        if (room.status !== "playing") fail("The shift is not running.", 409);
+        const station = room.stations[String(body.station || "")];
+        if (!station || station.status !== "prepping") fail("Choose a station with food being prepared.", 409);
+        const dish = MENU[station.item as keyof typeof MENU];
+        if (!dish || station.prepStep >= dish.prep.length) fail("That recipe is already cooking.", 409);
+        station.prepStep += 1;
+        if (station.prepStep >= dish.prep.length) {
+          const stationId = MENU[station.item as keyof typeof MENU].station;
+          const speed = Math.max(0.55, 1 - 0.15 * (room.upgrades[stationId] || 0));
+          const startedAt = Date.now();
+          station.status = "cooking";
+          station.startedAt = startedAt;
+          station.readyAt = startedAt + Math.round(dish.seconds * speed * 1000);
+          room.lastEvent = dish.name + " is cooking. Watch the station!";
+        } else {
+          room.lastEvent = me.name + " · " + dish.pre[station.prepStep - 1] + "!";
+        }
         return view(room, playerId);
       }
       if (body.action === "collect") {
@@ -381,3 +402,5 @@ export default {
     return room.fetch(new Request(roomUrl, request));
   }
 };
+
+
