@@ -89,14 +89,16 @@ function ticketCard(ticket, index) {
 function stationCard(id) {
   const station = room.stations[id] || { status: "idle" };
   const item = station.item ? MENU[station.item] : null;
+  const prepSteps = item?.prep || ["Gather ingredients", "Prepare the recipe", "Finish the prep"];
   const upgrade = room.upgrades[id] || 0;
   let action = "";
   let stage = "READY FOR A DISH";
   if (station.status === "cooking") {
     stage = "COOKING · WATCH THE CLOCK";
   } else if (station.status === "prepping") {
-    const step = item?.prep?.[station.prepStep] || "Recipe ready";
-    stage = `PREP ${station.prepStep + 1}/${item.prep.length} · ${safe(step).toUpperCase()}`;
+    const prepStep = Math.max(0, Number(station.prepStep) || 0);
+    const step = prepSteps[prepStep] || "Recipe ready";
+    stage = `PREP ${Math.min(prepStep + 1, prepSteps.length)}/${prepSteps.length} · ${safe(step).toUpperCase()}`;
     action = `<button class="station-action prep-action" data-action="ingredient" data-station="${id}">ADD INGREDIENT →</button>`;
   } else if (station.status === "ready") {
     stage = "READY! COLLECT BEFORE IT BURNS";
@@ -123,7 +125,8 @@ function kitchenView() {
   const menu = Object.entries(MENU).map(([id, item]) => {
     const status = room.stations[item.station]?.status || "idle";
     const disabled = status !== "idle";
-    return `<button class="menu-tile menu-${id}" data-action="cook" data-item="${id}" ${disabled ? "disabled" : ""}><span class="menu-art">${item.icon}</span><span class="menu-copy"><b>${safe(item.name)}</b><small>${STATIONS[item.station].name} · ${item.pre.length} prep steps · ${item.seconds} sec cook</small></span><span class="menu-tap">${disabled ? status.toUpperCase() : "PREP THIS DISH"}</span></button>`;
+    const prepCount = item.prep?.length || 3;
+    return `<button class="menu-tile menu-${id}" data-action="cook" data-item="${id}" ${disabled ? "disabled" : ""}><span class="menu-art">${item.icon}</span><span class="menu-copy"><b>${safe(item.name)}</b><small>${STATIONS[item.station].name} · ${prepCount} prep steps · ${item.seconds} sec cook</small></span><span class="menu-tap">${disabled ? status.toUpperCase() : "PREP THIS DISH"}</span></button>`;
   }).join("");
   return `<section class="arcade-page">
     ${roomTop()}
