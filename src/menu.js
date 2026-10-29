@@ -1,8 +1,8 @@
 export const MENU = {
-  burger: { name: "Ghost Burger", icon: "🍔", station: "grill", seconds: 5 },
-  fries: { name: "Witch Fries", icon: "🍟", station: "fryer", seconds: 4 },
-  shake: { name: "Phantom Shake", icon: "🥤", station: "mixer", seconds: 3 },
-  pie: { name: "Moon Pie", icon: "🥧", station: "oven", seconds: 6 }
+  burger: { name: "Ghost Burger", icon: "🍔", station: "grill", seconds: 5, prep: ["Toast the bun", "Add ghost patty", "Top with moon cheese"] },
+  fries: { name: "Witch Fries", icon: "🍟", station: "fryer", seconds: 4, prep: ["Slice the potatoes", "Drop in the fryer", "Shake on spell salt"] },
+  shake: { name: "Phantom Shake", icon: "🥤", station: "mixer", seconds: 3, prep: ["Pour in moon milk", "Add ectoplasm berries", "Blend the swirl"] },
+  pie: { name: "Moon Pie", icon: "🥧", station: "oven", seconds: 6, prep: ["Roll the dough", "Add pumpkin filling", "Dust with moon sugar"] }
 };
 
 export const STATIONS = {
