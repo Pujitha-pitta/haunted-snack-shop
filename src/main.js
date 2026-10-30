@@ -90,15 +90,18 @@ function stationCard(id) {
   const station = room.stations[id] || { status: "idle" };
   const item = station.item ? MENU[station.item] : null;
   const prepSteps = item?.prep || ["Gather ingredients", "Prepare the recipe", "Finish the prep"];
+  const prepDone = Math.min(Math.max(0, Number(station.prepStep) || 0), prepSteps.length);
+  const ingredientRail = station.status === "prepping" && item
+    ? `<div class="ingredient-rail" aria-label="Ingredients added"><span>IN THE PAN</span>${prepSteps.slice(0, prepDone).map((step, i) => `<i class="ingredient-done" title="${safe(step)}">${["🥬", "🧂", "✨"][i % 3]}</i>`).join("")}<b>${prepDone}/${prepSteps.length}</b></div>`
+    : "";
   const upgrade = room.upgrades[id] || 0;
   let action = "";
   let stage = "READY FOR A DISH";
   if (station.status === "cooking") {
     stage = "COOKING · WATCH THE CLOCK";
   } else if (station.status === "prepping") {
-    const prepStep = Math.max(0, Number(station.prepStep) || 0);
-    const step = prepSteps[prepStep] || "Recipe ready";
-    stage = `PREP ${Math.min(prepStep + 1, prepSteps.length)}/${prepSteps.length} · ${safe(step).toUpperCase()}`;
+    const step = prepSteps[prepDone] || "Recipe ready";
+    stage = `NEXT: ${safe(step).toUpperCase()}`;
     action = `<button class="station-action prep-action" data-action="ingredient" data-station="${id}">ADD INGREDIENT →</button>`;
   } else if (station.status === "ready") {
     stage = "READY! COLLECT BEFORE IT BURNS";
@@ -110,7 +113,13 @@ function stationCard(id) {
   const progress = station.status === "cooking" ? 0 : 100;
   return `<article class="station-card station-${id} ${station.status}">
     <div class="station-topline"><span>${STATIONS[id].icon}</span><small>${STATIONS[id].name.toUpperCase()}</small><b>${upgrade ? "⚡".repeat(upgrade) : ""}</b></div>
-    <div class="station-equipment"><span class="station-fire">${station.status === "prepping" ? "✨" : station.status === "cooking" ? "〰" : station.status === "ready" ? "✨" : station.status === "burnt" ? "💨" : "♨"}</span><strong>${item ? item.icon : "🍽️"}</strong></div>
+    <div class="station-equipment kitchen-rig rig-${id} ${station.status}" aria-label="${safe(STATIONS[id].name)} ${safe(station.status)}">
+      <span class="rig-heat">${station.status === "burnt" ? "💨" : station.status === "ready" ? "✨" : station.status === "cooking" ? "♨" : ""}</span>
+      <div class="rig-vessel"><span class="rig-food">${item ? item.icon : id === "grill" ? "🍳" : id === "fryer" ? "🧺" : id === "mixer" ? "🥣" : "🥧"}</span><span class="rig-bubble bubble-one">●</span><span class="rig-bubble bubble-two">●</span><span class="rig-bubble bubble-three">●</span></div>
+      <span class="rig-fire">${station.status === "cooking" ? "🔥" : ""}</span>
+      <span class="rig-action-icon">${id === "grill" ? "↗" : id === "fryer" ? "〰" : id === "mixer" ? "🥄" : "☼"}</span>
+    </div>
+    ${ingredientRail}
     <div class="station-dish">${item ? safe(item.name) : "Empty station"}</div>
     <div class="station-status-text">${stage}</div>
     <div class="station-timer" data-cook-timer data-status="${station.status}" data-start="${station.startedAt || 0}" data-ready="${station.readyAt || 0}" data-burn="${station.burnAt || 0}" data-seconds="${item ? item.seconds : 0}"><span>${station.status === "cooking" ? "00:00" : station.status === "ready" ? "READY" : station.status === "burnt" ? "BURNT" : ""}</span><i style="width:${progress}%"></i></div>
