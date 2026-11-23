@@ -4,9 +4,10 @@
 import { LEVELS } from "./data.js";
 import { applyQuestStats } from "./save.js";
 import { sfx } from "./audio.js";
+import { API_ORIGIN, BASE } from "../api.js";
 import { startLevel, showMap, leaveGame, topNav, esc, banner, getSave, savePersist, appRoot, kitchenEl } from "./ui.js";
 
-const API = "/api/race";
+const API = API_ORIGIN + "/api/race";
 const KEY = "hss-race";
 const POLL_MS = 1000;
 const PRANK_COOLDOWN_MS = 6000;
@@ -125,7 +126,7 @@ async function create() {
     const data = await api("create", { name, code: "AAAAAA" }); // the worker picks the real code
     session = { code: data.room.code, playerId: data.playerId, name };
     saveSession();
-    history.replaceState({}, "", "/?race=" + data.room.code);
+    history.replaceState({}, "", BASE + "?race=" + data.room.code);
     applyRoom(data.room);
     startPolling();
   } catch (e) { toast(e.message, "bad"); }
@@ -143,7 +144,7 @@ async function join() {
     const data = await api("join", { name });
     session.playerId = data.playerId;
     saveSession();
-    history.replaceState({}, "", "/?race=" + code);
+    history.replaceState({}, "", BASE + "?race=" + code);
     applyRoom(data.room);
     startPolling();
   } catch (e) { session = null; toast(e.message, "bad"); }
@@ -413,7 +414,7 @@ export function handleRaceAct(act, btn) {
     case "race-create": create(); break;
     case "race-join": join(); break;
     case "race-copy": {
-      const url = `${location.origin}/?race=${room.code}`;
+      const url = `${location.origin}${BASE}?race=${room.code}`;
       navigator.clipboard?.writeText(url).then(() => toast("Invite link copied!")).catch(() => toast(`Room code: ${room.code}`));
       break;
     }
@@ -441,6 +442,6 @@ async function leaveRoom() {
   if (session) api("leave").catch(() => {});
   session = null; room = null; race = null; screen = null;
   saveSession();
-  history.replaceState({}, "", "/");
+  history.replaceState({}, "", BASE);
   showMap();
 }

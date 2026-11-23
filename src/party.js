@@ -1,4 +1,4 @@
-import { request } from "./api.js";
+import { request, BASE } from "./api.js";
 import { MENU, STATIONS } from "./menu.js";
 import "./style.css";
 import "./arcade.css";
@@ -22,7 +22,7 @@ const toast = message => {
 };
 
 function shell(content) {
-  return `<header class="topbar"><a class="brand" href="/" aria-label="Haunted Snack Shop home"><span class="brand-icon">☾</span><span>HAUNTED<br><b>SNACK SHOP</b></span></a><button class="how-link" data-action="rules">How to play <span>↗</span></button></header><main>${content}</main><footer><span>Open late. Friendly to ghosts.</span><span>✦ &nbsp; A tiny multiplayer game</span></footer><div id="toast" role="status" aria-live="polite"></div>`;
+  return `<header class="topbar"><a class="brand" href="./" aria-label="Haunted Snack Shop home"><span class="brand-icon">☾</span><span>HAUNTED<br><b>SNACK SHOP</b></span></a><button class="how-link" data-action="rules">How to play <span>↗</span></button></header><main>${content}</main><footer><span>Open late. Friendly to ghosts.</span><span>✦ &nbsp; A tiny multiplayer game</span></footer><div id="toast" role="status" aria-live="polite"></div>`;
 }
 
 function landing(prefill) {
@@ -276,7 +276,7 @@ function updateTimers() {
 }
 
 function copyInvite() {
-  const url = location.origin + "/party.html?room=" + room.code;
+  const url = location.origin + BASE + "party.html?room=" + room.code;
   navigator.clipboard?.writeText(url).then(() => toast("Invite link copied!")).catch(() => toast("Room code: " + room.code));
 }
 
@@ -310,7 +310,7 @@ app.addEventListener("click", async event => {
   if (action === "serve") { await act("serve", { ticketId: button.dataset.ticket }); return; }
   if (action === "upgrade") { await act("upgrade", { station: button.dataset.station }); return; }
   if (action === "new-shop") {
-    room = null; session = null; localStorage.removeItem(SESSION_KEY); history.replaceState({}, "", "/party.html"); landing("");
+    room = null; session = null; localStorage.removeItem(SESSION_KEY); history.replaceState({}, "", BASE + "party.html"); landing("");
     return;
   }
   await act(action);

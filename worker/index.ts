@@ -401,9 +401,29 @@ export class GameRoom {
     return handleGameRequest(request, this.state.storage);
   }
 }
+// The GitHub Pages copy of the game calls this Worker from another origin.
+const ALLOWED_ORIGINS = ["https://pujitha-pitta.github.io"];
+function withCors(request: Request, response: Response) {
+  const origin = request.headers.get("origin") || "";
+  if (!ALLOWED_ORIGINS.includes(origin)) return response;
+  const res = new Response(response.body, response);
+  res.headers.set("access-control-allow-origin", origin);
+  res.headers.set("access-control-allow-methods", "GET, POST, OPTIONS");
+  res.headers.set("access-control-allow-headers", "content-type");
+  res.headers.set("access-control-max-age", "86400");
+  res.headers.append("vary", "origin");
+  return res;
+}
 export default {
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url);
+    const isApi = url.pathname === "/api/race" || url.pathname === "/api/game" || url.pathname === "/.netlify/functions/game";
+    if (!isApi) return env.ASSETS.fetch(request);
+    return withCors(request, await handleApi(request, env, url));
+  }
+};
+async function handleApi(request: Request, env: Env, url: URL): Promise<Response> {
+  {
     if (url.pathname === "/api/race") return routeRace(request, env, url);
     if (url.pathname !== "/api/game" && url.pathname !== "/.netlify/functions/game") return env.ASSETS.fetch(request);
     if (request.method === "OPTIONS") return new Response(null, { status: 204 });
@@ -432,6 +452,6 @@ export default {
     roomUrl.hostname = "room.internal";
     return room.fetch(new Request(roomUrl, request));
   }
-};
+}
 
 

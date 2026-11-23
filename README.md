@@ -2,6 +2,8 @@
 
 ### 🎮 [Play it live → haunted-snack-shop.nagapujitha456.workers.dev](https://haunted-snack-shop.nagapujitha456.workers.dev)
 
+Also on GitHub Pages: [pujitha-pitta.github.io/haunted-snack-shop](https://pujitha-pitta.github.io/haunted-snack-shop/). The Pages copy uses the Cloudflare Worker above for multiplayer.
+
 Race your friends: open the link, tap **Race friends**, and share the room code.
 
 A fast, cute-spooky cooking and time-management game for phones and desktops. Cook for ghost customers, keep their patience bars up, and serve everyone before the clock strikes midnight.

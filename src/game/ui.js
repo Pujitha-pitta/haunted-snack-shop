@@ -56,7 +56,7 @@ function showTitle() {
       <p>Flip ghost burgers, shake witch fries and serve picky phantoms before the clock strikes midnight.</p>
       <button class="btn big primary" data-act="${save.levels[0] ? "map" : "first"}">${save.levels[0] ? "Continue" : "Play"} →</button>
       <button class="btn big race-btn" data-act="race">👥 Race friends</button>
-      <a class="text-link" href="/party.html">Classic co-op party mode ↗</a>
+      <a class="text-link" href="party.html">Classic co-op party mode ↗</a>
     </div>
     <div class="title-counter"><span>🍳</span><span>🧺</span><span>🌀</span></div>
   </div>`;
@@ -107,7 +107,7 @@ export function showMap() {
     <nav class="map-actions">
       <button class="btn" data-act="shop">🛠️ Upgrades</button>
       <button class="btn" data-act="book">📖 Ghost Book</button>
-      <a class="btn ghosty" href="/party.html">🤝 Co-op</a>
+      <a class="btn ghosty" href="party.html">🤝 Co-op</a>
     </nav>
   </div>`;
 }
