@@ -1,5 +1,9 @@
 # Haunted Snack Shop: Midnight Rush
 
+### 🎮 [Play it live → haunted-snack-shop.nagapujitha456.workers.dev](https://haunted-snack-shop.nagapujitha456.workers.dev)
+
+Race your friends: open the link, tap **Race friends**, and share the room code.
+
 A fast, cute-spooky cooking and time-management game for phones and desktops. Cook for ghost customers, keep their patience bars up, and serve everyone before the clock strikes midnight.
 
 ## Single-player game (`index.html`)
