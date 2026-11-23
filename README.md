@@ -47,6 +47,8 @@ Install Node.js and run `npm install`.
 
 ## Deploy
 
+**GitHub Pages** publishes automatically: every push to `main` runs `.github/workflows/pages.yml`, which builds the game and deploys it to Pages. **Cloudflare** (needed for multiplayer) is published with `npm run deploy:cloudflare`.
+
 This project is configured for Netlify Functions and Netlify Blobs. Connect this GitHub repo to Netlify and deploy with the default build settings (`npm run build`, publish directory `dist`). No environment variables or external database setup are needed. Rooms are stored in a strong-consistency Netlify Blobs store with conditional writes.
 
 The game page calls `/.netlify/functions/game` directly. The production backend must run on Netlify for room creation and shared gameplay to work.
