@@ -1,4 +1,5 @@
 import { MENU, STATIONS, CUSTOMER_ORDERS } from "../src/menu.js";
+import { handleRaceRequest } from "./race";
 
 const MAX_PLAYERS = 8;
 const LEVELS = ["Midnight Rush", "Witching Hour", "Ghost King’s Feast"];
@@ -367,15 +368,43 @@ function randomRoomCode() {
   const bytes = crypto.getRandomValues(new Uint8Array(6));
   return Array.from(bytes, byte => alphabet[byte % alphabet.length]).join("");
 }
+// Versus race rooms live in their own Durable Objects ("race:CODE"), separate from co-op rooms.
+async function routeRace(request: Request, env: Env, url: URL) {
+  if (request.method === "OPTIONS") return new Response(null, { status: 204 });
+  let body: any = null;
+  if (request.method === "POST") {
+    try { body = await request.clone().json(); }
+    catch { return json({ error: "Send a valid game action." }, 400); }
+  }
+  const forward = (code: string, init: RequestInit) => {
+    const roomUrl = new URL(url);
+    roomUrl.hostname = "room.internal";
+    return env.ROOMS.get(env.ROOMS.idFromName("race:" + code)).fetch(new Request(roomUrl, init));
+  };
+  if (body?.action === "create") {
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const code = randomRoomCode();
+      const response = await forward(code, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, code }) });
+      const result = await response.clone().json().catch(() => ({}));
+      if (response.status !== 409 || result.error !== "ROOM_CODE_TAKEN") return response;
+    }
+    return json({ error: "Could not find an open room code. Try again." }, 503);
+  }
+  const code = String(request.method === "GET" ? url.searchParams.get("room") : body?.code || "").trim().toUpperCase();
+  if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) return json({ error: "Enter a valid six-character room code." }, 400);
+  return forward(code, request.method === "GET" ? { method: "GET" } : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+}
 export class GameRoom {
   constructor(private state: any) {}
   async fetch(request: Request) {
+    if (new URL(request.url).pathname === "/api/race") return handleRaceRequest(request, this.state.storage);
     return handleGameRequest(request, this.state.storage);
   }
 }
 export default {
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url);
+    if (url.pathname === "/api/race") return routeRace(request, env, url);
     if (url.pathname !== "/api/game" && url.pathname !== "/.netlify/functions/game") return env.ASSETS.fetch(request);
     if (request.method === "OPTIONS") return new Response(null, { status: 204 });
     let body: any = null;

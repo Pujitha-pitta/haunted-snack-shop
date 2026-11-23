@@ -2,7 +2,9 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 
 // Two pages: the single-player game (index.html) and the co-op party mode (party.html).
+// In development, API calls are proxied to `npx wrangler dev` on port 8787.
 export default defineConfig({
+  server: { proxy: { "/api": "http://127.0.0.1:8787", "/.netlify/functions": "http://127.0.0.1:8787" } },
   build: {
     rollupOptions: {
       input: {

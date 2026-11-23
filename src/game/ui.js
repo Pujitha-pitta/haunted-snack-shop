@@ -3,6 +3,7 @@ import { RECIPES, STATIONS, CUSTOMERS, LEVELS, WORLDS, UPGRADES, QUEST_POOL, TOP
 import { Run, FLIP_WINDOW, starGoals } from "./engine.js";
 import { loadSave, writeSave, ensureDaily, loginReward, claimLogin, applyQuestStats, unlockedCount, totalStars, storageOk } from "./save.js";
 import { sfx, unlockAudio, setSound } from "./audio.js";
+import { showRaceHome, handleRaceAct } from "./race.js";
 
 const app = document.querySelector("#app");
 let save = loadSave();
@@ -16,14 +17,21 @@ let lastFrame = 0;
 let lastVersion = -1;
 let seenCustomers = new Set();
 let els = {};
+let mode = null; // versus-race hooks while racing: { onFrame, onOver, title }
 
-const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+export const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const persist = () => writeSave(save);
+export const getSave = () => save;
+export const savePersist = () => persist();
+export const appRoot = () => app;
+export const kitchenEl = (id) => document.getElementById(id);
 const starRow = (n, size = "") => `<span class="stars ${size}">${[1, 2, 3].map(i => `<i class="${n >= i ? "on" : ""}">★</i>`).join("")}</span>`;
 
 function stopLoop() { cancelAnimationFrame(raf); raf = 0; }
+// Stop whatever is running and clear the screen state (used by race screens).
+export function leaveGame() { stopLoop(); run = null; mode = null; document.querySelector(".modal-wrap")?.remove(); }
 
-function topNav(back) {
+export function topNav(back) {
   return `<header class="topnav">
     ${back ? `<button class="icon-btn" data-act="map" aria-label="Back to map">←</button>` : `<div class="logo-sm"><span>👻</span><b>Haunted<br>Snack Shop</b></div>`}
     <div class="pills">
@@ -38,6 +46,7 @@ function topNav(back) {
 function showTitle() {
   stopLoop();
   run = null;
+  mode = null;
   app.innerHTML = `<div class="screen title-screen">
     <div class="title-sky"><span class="moon"></span><span class="float f1">👻</span><span class="float f2">🍔</span><span class="float f3">🍟</span><span class="float f4">🥤</span><span class="float f5">🎃</span></div>
     <div class="title-card">
@@ -46,16 +55,18 @@ function showTitle() {
       <div class="title-sub">MIDNIGHT RUSH</div>
       <p>Flip ghost burgers, shake witch fries and serve picky phantoms before the clock strikes midnight.</p>
       <button class="btn big primary" data-act="${save.levels[0] ? "map" : "first"}">${save.levels[0] ? "Continue" : "Play"} →</button>
-      <a class="text-link" href="/party.html">Co-op party mode (2–8 players) ↗</a>
+      <button class="btn big race-btn" data-act="race">👥 Race friends</button>
+      <a class="text-link" href="/party.html">Classic co-op party mode ↗</a>
     </div>
     <div class="title-counter"><span>🍳</span><span>🧺</span><span>🌀</span></div>
   </div>`;
 }
 
 // ---------------- Map ----------------
-function showMap() {
+export function showMap() {
   stopLoop();
   run = null;
+  mode = null;
   ensureDaily(save);
   const unlocked = unlockedCount(save);
   const login = loginReward(save);
@@ -87,6 +98,7 @@ function showMap() {
       ${login ? `<div class="login-reward"><span>🎁</span><div><b>Daily treat</b><small>Day ${save.login.last === "" ? 1 : Math.min(7, (save.login.streak || 0) + 1)} streak bonus</small></div><button class="btn primary small" data-act="login">Claim 🪙 ${login}</button></div>` : ""}
       <ul class="quests">${quests}</ul>
     </section>
+    <button class="race-card" data-act="race"><span>👥</span><div><b>Versus Race</b><small>Race 2–8 friends live on the same level. Highest coins wins. Prank the leader!</small></div><em>PLAY →</em></button>
     <section class="world">
       <div class="world-head"><span class="world-icon">🏚️</span><div><small>WORLD 1</small><h2>Haunted Snack Shop</h2></div>${save.crown ? `<span class="crown-badge">👑 Cleared</span>` : ""}</div>
       <div class="path">${nodes}</div>
@@ -95,7 +107,7 @@ function showMap() {
     <nav class="map-actions">
       <button class="btn" data-act="shop">🛠️ Upgrades</button>
       <button class="btn" data-act="book">📖 Ghost Book</button>
-      <a class="btn ghosty" href="/party.html">👥 Co-op</a>
+      <a class="btn ghosty" href="/party.html">🤝 Co-op</a>
     </nav>
   </div>`;
 }
@@ -123,26 +135,29 @@ function showIntro(i) {
 }
 
 // ---------------- Kitchen ----------------
-function startLevel(i) {
+export function startLevel(i, opts = null) {
   document.querySelector(".modal-wrap")?.remove();
+  stopLoop();
+  mode = opts;
   const cfg = LEVELS[i];
-  if (cfg.gift && !save.upgrades[cfg.gift]) { save.upgrades[cfg.gift] = 1; persist(); }
-  run = new Run(i, save.upgrades);
+  if (!mode && cfg.gift && !save.upgrades[cfg.gift]) { save.upgrades[cfg.gift] = 1; persist(); }
+  run = new Run(i, mode ? mode.upgrades : save.upgrades, { seed: mode?.seed });
   seenCustomers = new Set();
   lastVersion = -1;
-  const up = save.upgrades;
+  const up = mode ? {} : save.upgrades;
   const decor = `${up["decor.lights"] ? `<div class="decor-lights" aria-hidden="true">${"<i></i>".repeat(14)}</div>` : ""}
     ${up["decor.pumpkins"] ? `<span class="decor-pumpkins" aria-hidden="true">🎃🎃</span>` : ""}
     ${up["decor.furniture"] ? `<span class="decor-furniture" aria-hidden="true">🕯️ 🪑 🕯️</span>` : ""}`;
   app.innerHTML = `<div class="screen kitchen" id="kitchen">
     <header class="hud">
-      <button class="icon-btn" data-act="pause" aria-label="Pause">⏸</button>
-      <div class="hud-block hud-level"><small>LEVEL ${i + 1}</small><b>${esc(cfg.name)}</b></div>
+      ${mode ? `<button class="icon-btn" data-act="race-quit" aria-label="Leave race">✕</button>` : `<button class="icon-btn" data-act="pause" aria-label="Pause">⏸</button>`}
+      <div class="hud-block hud-level"><small>${mode ? "VERSUS RACE" : `LEVEL ${i + 1}`}</small><b>${esc(mode ? mode.title : cfg.name)}</b></div>
       <div class="hud-block hud-clock"><small>UNTIL MIDNIGHT</small><b id="clock">9:00 PM</b><div class="bar"><i id="clockbar"></i></div></div>
       <div class="hud-block hud-coins"><small>COINS · ★★${cfg.coins}</small><b>🪙 <span id="coins">0</span></b><div class="bar gold"><i id="coinbar"></i></div></div>
       <div class="hud-block hud-served"><small>SERVED · ★${cfg.serve}</small><b>👻 <span id="served">0</span>/${cfg.customers}</b></div>
       <div class="hud-combo" id="combo">COMBO ×0</div>
     </header>
+    ${mode ? `<div class="race-board" id="raceboard"></div><div class="prank-bar" id="prankbar"></div>` : ""}
     <div class="hint" id="hint" aria-live="polite"></div>
     <section class="shopfront">
       <div class="window-moon" aria-hidden="true">☾</div>${decor}
@@ -161,7 +176,7 @@ function startLevel(i) {
     coins: document.getElementById("coins"), coinbar: document.getElementById("coinbar"), served: document.getElementById("served"),
     combo: document.getElementById("combo"), hint: document.getElementById("hint"), banner: document.getElementById("banner"),
     thief: document.getElementById("thief-layer") };
-  banner(`Level ${i + 1}: ${cfg.name}`, "start");
+  banner(mode ? "GO! Cook faster than your rivals!" : `Level ${i + 1}: ${cfg.name}`, "start");
   lastFrame = performance.now();
   raf = requestAnimationFrame(frame);
 }
@@ -174,6 +189,7 @@ function frame(now) {
   if (run.version !== lastVersion) { lastVersion = run.version; renderDynamic(); }
   updateBars();
   drainEvents();
+  if (run && mode) mode.onFrame?.(run);
   if (run && !run.over) raf = requestAnimationFrame(frame);
 }
 
@@ -371,7 +387,7 @@ function thiefTargetEl() {
 }
 
 // ---------------- Effects ----------------
-function floatText(anchor, text, kind = "") {
+export function floatText(anchor, text, kind = "") {
   if (!anchor) return;
   const box = anchor.getBoundingClientRect();
   const el = document.createElement("div");
@@ -383,7 +399,7 @@ function floatText(anchor, text, kind = "") {
   setTimeout(() => el.remove(), 1300);
 }
 
-function banner(text, kind = "") {
+export function banner(text, kind = "") {
   if (!els.banner) return;
   els.banner.textContent = text;
   els.banner.className = `banner show ${kind}`;
@@ -433,7 +449,8 @@ function drainEvents() {
       case "changed": sfx.warn(); floatText(seatEl(e.seat), "Changed my mind!", "warn"); break;
       case "hint": floatText(slotEl(e.slot), e.text); break;
       case "toss": sfx.tap(); break;
-      case "over": setTimeout(showResults, 650); break;
+      case "boo": sfx.bad(); buzz(100); break;
+      case "over": if (mode) { const m = mode, r = run; setTimeout(() => m.onOver?.(r), 650); } else setTimeout(showResults, 650); break;
     }
   }
 }
@@ -505,7 +522,7 @@ function tipFor(r) {
 
 // ---------------- Pause ----------------
 function pause() {
-  if (!run || run.over || run.paused) return;
+  if (!run || run.over || run.paused || mode) return;
   run.paused = true;
   const modal = document.createElement("div");
   modal.className = "modal-wrap";
@@ -526,6 +543,7 @@ function resume() {
 function showShop() {
   stopLoop();
   run = null;
+  mode = null;
   const reached = unlockedCount(save);
   const groups = ["Kitchen", "Serving", "Decor"].map(group => {
     const cards = UPGRADES.filter(u => u.group === group).map(u => {
@@ -568,6 +586,7 @@ function buy(key) {
 function showBook() {
   stopLoop();
   run = null;
+  mode = null;
   const cards = Object.entries(CUSTOMERS).map(([id, c]) => {
     const rec = save.book[id];
     if (!rec?.seen) return `<div class="ghost-card unknown"><span class="gc-avatar">❔</span><b>???</b><small>Appears from level ${c.firstLevel}</small></div>`;
@@ -618,6 +637,7 @@ app.addEventListener("click", (event) => {
   const i = Number(btn.dataset.i);
   unlockAudio();
   sfx.tap();
+  if (act.startsWith("race")) { handleRaceAct(act, btn); return; }
   switch (act) {
     case "first": showMap(); showIntro(0); break;
     case "map": showMap(); break;
@@ -657,6 +677,8 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("visibilitychange", () => { if (document.hidden) pause(); });
 
 export function boot() {
-  showTitle();
+  const raceCode = new URLSearchParams(location.search).get("race");
+  if (raceCode) showRaceHome(raceCode.toUpperCase().slice(0, 6));
+  else showTitle();
   if (import.meta.env.DEV) window.__hss = { run: () => run, save: () => save };
 }

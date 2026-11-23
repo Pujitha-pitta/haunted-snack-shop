@@ -10,19 +10,33 @@ const STIR_ZONE = 0.55;               // bubble level where "STIR!" shows
 const SEATS = 4;
 const SPEED = [1, 0.85, 0.72, 0.6];   // cook-time multiplier per station speed tier
 
-const rand = (a, b) => a + Math.random() * (b - a);
-const randInt = (a, b) => Math.floor(rand(a, b + 1));
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-function weightedPick(weights) {
+// Seeded random numbers so every racer in a versus room gets the same customers.
+export function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const rand = (rng, a, b) => a + rng() * (b - a);
+const randInt = (rng, a, b) => Math.floor(rand(rng, a, b + 1));
+const pick = (rng, arr) => arr[Math.floor(rng() * arr.length)];
+function weightedPick(rng, weights) {
   const entries = Object.entries(weights);
-  let r = Math.random() * entries.reduce((s, [, w]) => s + w, 0);
+  let r = rng() * entries.reduce((s, [, w]) => s + w, 0);
   for (const [k, w] of entries) if ((r -= w) <= 0) return k;
   return entries[0][0];
 }
 const emptySlot = () => ({ state: "empty", id: 0 });
 
 export class Run {
-  constructor(levelIndex, upgrades = {}) {
+  constructor(levelIndex, upgrades = {}, opts = {}) {
+    const seed = opts.seed ?? Math.floor(Math.random() * 2 ** 32);
+    this.custRng = mulberry32(seed);              // customers: identical for every racer
+    this.rng = mulberry32(seed ^ 0x9e3779b9);     // everything that depends on the player's actions
     this.levelIndex = levelIndex;
     this.cfg = LEVELS[levelIndex];
     this.up = upgrades;
@@ -77,19 +91,19 @@ export class Run {
   // ---------- customers ----------
   makeCustomer() {
     const isBoss = this.spawned === this.bossIndex;
-    const type = isBoss ? "king" : weightedPick(this.cfg.types);
+    const type = isBoss ? "king" : weightedPick(this.custRng, this.cfg.types);
     const def = CUSTOMERS[type];
-    const count = isBoss ? 5 : Math.min(this.cfg.maxItems || 1, randInt(def.items[0], def.items[1]));
-    const items = Array.from({ length: count }, () => ({ recipe: pick(this.cfg.recipes), done: false, perfect: false }));
+    const count = isBoss ? 5 : Math.min(this.cfg.maxItems || 1, randInt(this.custRng, def.items[0], def.items[1]));
+    const items = Array.from({ length: count }, () => ({ recipe: pick(this.custRng, this.cfg.recipes), done: false, perfect: false }));
     if (type === "witch") {
       const choices = this.cfg.recipes.filter(r => r !== "soup");
-      items[0].recipe = pick(choices);
+      items[0].recipe = pick(this.custRng, choices);
       items[0].secret = true;
     }
     const patience = isBoss ? this.cfg.bossTime || 80 : (13 + 6.5 * count) * def.patience * this.patienceMul;
     this.seen.add(type);
     return { id: this.nextId++, type, items, patience, max: patience, mood: "happy", changed: false,
-      line: pick(def.lines), leaving: null, leaveT: 0 };
+      line: pick(this.custRng, def.lines), leaving: null, leaveT: 0 };
   }
 
   customerLeaves(c, happy) {
@@ -164,7 +178,7 @@ export class Run {
         if (R.mini === "stop") slot.state = "filling";
         if (R.mini === "order") {
           slot.state = "prep";
-          slot.prep = [...TOPPINGS].sort(() => Math.random() - 0.5).map(t => t.id);
+          slot.prep = [...TOPPINGS].sort(() => this.rng() - 0.5).map(t => t.id);
         }
         this.emit("start", { slot: ref, recipe });
         break;
@@ -265,6 +279,25 @@ export class Run {
     this.bump();
   }
 
+  // Versus-mode pranks sent by rivals. Returns false if it had no effect.
+  prank(kind) {
+    if (this.over) return false;
+    if (kind === "lights") { this.lightsUntil = this.t + 4.5; this.emit("lights"); this.bump(); return true; }
+    if (kind === "thief") {
+      if (this.thief) return false;
+      const e = { type: "thief" };
+      this.fire(e);
+      return !!this.thief;
+    }
+    if (kind === "boo") {
+      let hit = false;
+      for (const c of this.seats) if (c && !c.leaving) { c.patience = Math.max(1, c.patience - c.max * 0.15); hit = true; }
+      if (hit) { this.emit("boo"); this.bump(); }
+      return hit;
+    }
+    return false;
+  }
+
   clearThiefFor(slot) { if (this.thief?.target === slot) this.thief = null; }
 
   // ---------- events ----------
@@ -272,10 +305,10 @@ export class Run {
     if (e.type === "lights") { this.lightsUntil = this.t + 6; this.emit("lights"); }
     if (e.type === "rush") { this.rushUntil = this.t + 8; this.emit("rush"); }
     if (e.type === "thief") {
-      let target = this.tray.length ? pick(this.tray) : null;
+      let target = this.tray.length ? pick(this.rng, this.tray) : null;
       if (!target) {
         const ready = this.stationIds.flatMap(id => this.stations[id].slots).filter(s => s.state === "ready");
-        target = ready.length ? pick(ready) : null;
+        target = ready.length ? pick(this.rng, ready) : null;
       }
       if (!target) { e.fired = false; e.at = this.t + 3; return; } // try again soon, no warning spam
       this.thief = { target, left: 4.5, max: 4.5 };
@@ -327,7 +360,7 @@ export class Run {
         const c = this.makeCustomer();
         this.seats[free] = c;
         this.spawned++;
-        this.nextSpawn = this.t + this.interval * rand(0.8, 1.2) * (c.type === "king" ? 1.6 : 1);
+        this.nextSpawn = this.t + this.interval * rand(this.custRng, 0.8, 1.2) * (c.type === "king" ? 1.6 : 1);
         this.emit("arrive", { seat: free, who: c.type });
         this.bump();
       }
@@ -351,8 +384,8 @@ export class Run {
         const open = c.items.filter(it => !it.done);
         const options = this.cfg.recipes.filter(x => !open.some(it => it.recipe === x));
         if (open.length && options.length) {
-          const it = pick(open);
-          it.recipe = pick(options);
+          const it = pick(this.rng, open);
+          it.recipe = pick(this.rng, options);
           it.changed = true;
           c.patience = Math.min(c.max, c.patience + c.max * 0.3);
           c.line = `Actually… ${RECIPES[it.recipe].name}!`;

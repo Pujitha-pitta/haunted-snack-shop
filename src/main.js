@@ -1,4 +1,5 @@
 import "./game.css";
+import "./race.css";
 import { boot } from "./game/ui.js";
 
 // Old co-op invite links pointed at /?room=CODE. Send them to the party page.
