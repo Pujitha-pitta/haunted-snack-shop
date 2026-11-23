@@ -282,11 +282,13 @@ export class Run {
   // Versus-mode pranks sent by rivals. Returns false if it had no effect.
   prank(kind) {
     if (this.over) return false;
-    if (kind === "lights") { this.lightsUntil = this.t + 4.5; this.emit("lights"); this.bump(); return true; }
+    if (kind === "lights") { this.lightsUntil = this.t + 4.5; this.bump(); return true; }
     if (kind === "thief") {
       if (this.thief) return false;
       const e = { type: "thief" };
       this.fire(e);
+      // The race screen shows its own "who pranked you" banner, so drop the generic one.
+      this.queue = this.queue.filter(q => q.type !== "thief");
       return !!this.thief;
     }
     if (kind === "boo") {

@@ -16,13 +16,28 @@ A fast, cute-spooky cooking and time-management game for phones and desktops. Co
 
 Code lives in `src/game/`: `data.js` (recipes, customers, levels, upgrades, quests), `engine.js` (the simulation, no DOM), `ui.js` (screens and input), `save.js` and `audio.js`.
 
+## Versus Race multiplayer
+
+Race 2–8 friends live. Tap **Race friends** on the title screen (or the Versus Race card on the map), create a room, and share the 6-letter code or the invite link (`/?race=CODE`).
+
+- The host picks one of four races: Snack Dash, Lights Out Rush, Ghost King Showdown or Midnight Mayhem.
+- After a synced 3-2-1 countdown, everyone cooks the same level in their own kitchen with the **same customers in the same order** (a shared random seed). Each kitchen runs on the player's own device, so there is no input lag.
+- A live scoreboard shows everyone's coins. The most coins wins.
+- Every ×3 combo charges a pumpkin (up to 3). Spend one to send a prank to the leader: **Lights Out**, **Thief Ghost** or **BOO!** (spooks their customers). Pranks have a short recharge and a per-race limit.
+- A podium shows the results, and the host can race again or pick a different race. Upgrades don't count in races (everyone gets the same standard kitchen), but coins you earn go into your wallet.
+
+The race server lives in `worker/race.ts`. It runs in the Cloudflare Worker's Durable Objects at `/api/race`, separate from the classic co-op rooms. The client is `src/game/race.js`. **Multiplayer needs the Cloudflare Worker deployment.** The Netlify Function only serves the classic co-op game.
+
 ## Co-op party mode (`party.html`)
 
 The original multiplayer room game is still available at `/party.html`. 2–8 players join a room with a six-character code and cook together in one shared kitchen. It needs the Netlify Function or Cloudflare Worker backend described below. Old invite links (`/?room=CODE`) redirect to the party page automatically.
 
 ## Run locally
 
-Install Node.js and run `npm install`. For the single-player game alone, `npm run dev` is enough. To run co-op mode as well, run `npm run build` and `npx netlify dev`. Netlify Dev serves the site and its function together. The local Netlify Blobs store is separate from production.
+Install Node.js and run `npm install`.
+
+- Single-player only: `npm run dev`.
+- With multiplayer: in one terminal run `npx wrangler dev --port 8787`, and in a second terminal run `npm run dev`. Vite forwards `/api` requests to the local Worker. On Windows, if Wrangler fails with `SQLITE_CANTOPEN` because the folder path is long, add `--persist-to C:/temp/hss-wrangler`.
 
 ## Deploy
 

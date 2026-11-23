@@ -20,7 +20,7 @@ export const STAGES = {
 };
 const PRANKS = {
   lights: { icon: "🌑", name: "Lights Out", text: "turned off your lights" },
-  thief: { icon: "👻", name: "Thief Ghost", text: "sent a thief ghost" },
+  thief: { icon: "👻", name: "Thief Ghost", text: "sent a thief ghost. Tap it" },
   boo: { icon: "😱", name: "BOO!", text: "spooked your customers" }
 };
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -245,7 +245,7 @@ function beginCountdown() {
   let last = -1;
   const step = () => {
     const left = room.startAt - serverNow();
-    const n = Math.ceil(left / 1000);
+    const n = Math.min(3, Math.ceil(left / 1000));
     const el = document.getElementById("cd-number");
     if (left <= 0) { clearInterval(countdownTimer); startRace(); return; }
     if (el && n !== last) { last = n; el.textContent = n; el.classList.remove("tick"); void el.offsetWidth; el.classList.add("tick"); sfx.tap(); }
