@@ -1,11 +1,5 @@
 # Haunted Snack Shop: Midnight Rush
 
-### 🎮 [Play it live → haunted-snack-shop.nagapujitha456.workers.dev](https://haunted-snack-shop.nagapujitha456.workers.dev)
-
-Also on GitHub Pages: [pujitha-pitta.github.io/haunted-snack-shop](https://pujitha-pitta.github.io/haunted-snack-shop/). The Pages copy uses the Cloudflare Worker above for multiplayer.
-
-Race your friends: open the link, tap **Race friends**, and share the room code.
-
 A fast, cute-spooky cooking and time-management game for phones and desktops. Cook for ghost customers, keep their patience bars up, and serve everyone before the clock strikes midnight.
 
 ## Single-player game (`index.html`)
@@ -32,11 +26,11 @@ Race 2–8 friends live. Tap **Race friends** on the title screen (or the Versus
 - Every ×3 combo charges a pumpkin (up to 3). Spend one to send a prank to the leader: **Lights Out**, **Thief Ghost** or **BOO!** (spooks their customers). Pranks have a short recharge and a per-race limit.
 - A podium shows the results, and the host can race again or pick a different race. Upgrades don't count in races (everyone gets the same standard kitchen), but coins you earn go into your wallet.
 
-The race server lives in `worker/race.ts`. It runs in the Cloudflare Worker's Durable Objects at `/api/race`, separate from the classic co-op rooms. The client is `src/game/race.js`. **Multiplayer needs the Cloudflare Worker deployment.** The Netlify Function only serves the classic co-op game.
+The race server lives in `worker/race.ts`. It runs in the Cloudflare Worker's Durable Objects at `/api/race`, separate from the classic co-op rooms. The client is `src/game/race.js`. **Multiplayer needs the Cloudflare Worker deployment.**
 
 ## Co-op party mode (`party.html`)
 
-The original multiplayer room game is still available at `/party.html`. 2–8 players join a room with a six-character code and cook together in one shared kitchen. It needs the Netlify Function or Cloudflare Worker backend described below. Old invite links (`/?room=CODE`) redirect to the party page automatically.
+The original multiplayer room game is still available at `/party.html`. 2–8 players join a room with a six-character code and cook together in one shared kitchen. Its server is also part of the Cloudflare Worker (`worker/index.ts`, at `/api/game`). Old invite links (`/?room=CODE`) redirect to the party page automatically.
 
 ## Run locally
 
@@ -47,15 +41,9 @@ Install Node.js and run `npm install`.
 
 ## Deploy
 
-**GitHub Pages** publishes automatically: every push to `main` runs `.github/workflows/pages.yml`, which builds the game and deploys it to Pages. **Cloudflare** (needed for multiplayer) also deploys automatically on every push to `main` via `.github/workflows/cloudflare.yml`, once the repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are set. You can still deploy by hand with `npm run deploy:cloudflare`.
+Every push to `main` deploys automatically with GitHub Actions:
 
-This project is configured for Netlify Functions and Netlify Blobs. Connect this GitHub repo to Netlify and deploy with the default build settings (`npm run build`, publish directory `dist`). No environment variables or external database setup are needed. Rooms are stored in a strong-consistency Netlify Blobs store with conditional writes.
+- **GitHub Pages** (`.github/workflows/pages.yml`) builds the game and publishes it to Pages. The Pages copy sends multiplayer requests to the Cloudflare Worker.
+- **Cloudflare** (`.github/workflows/cloudflare.yml`) builds the game and deploys the Worker, which serves the game and runs the multiplayer servers (`worker/index.ts` for co-op, `worker/race.ts` for versus races) in Durable Objects. It needs the repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. You can also deploy by hand with `npm run deploy:cloudflare`.
 
-The game page calls `/.netlify/functions/game` directly. The production backend must run on Netlify for room creation and shared gameplay to work.
-
-## Cloudflare migration
-
-The parallel Cloudflare Worker backend is in `worker/index.ts`. It keeps each room in its own SQLite-backed Durable Object, so game state is strongly consistent and does not require Netlify Blobs. The Worker serves the Vite build and supports both the existing function URL and `/api/game` during migration.
-
-To deploy it, connect this repository to Cloudflare Workers Builds, keep the project root at the repository root, and use `npm run deploy:cloudflare` as the deploy command. The `wrangler.jsonc` file configures the static asset binding and the `GameRoom` Durable Object. Cloudflare will prompt you to authorize GitHub repository access before it can build on pushes.
-
+`wrangler.jsonc` configures the Worker, its static assets and the `GameRoom` Durable Object.

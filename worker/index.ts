@@ -417,7 +417,7 @@ function withCors(request: Request, response: Response) {
 export default {
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url);
-    const isApi = url.pathname === "/api/race" || url.pathname === "/api/game" || url.pathname === "/.netlify/functions/game";
+    const isApi = url.pathname === "/api/race" || url.pathname === "/api/game";
     if (!isApi) return env.ASSETS.fetch(request);
     return withCors(request, await handleApi(request, env, url));
   }
@@ -425,7 +425,7 @@ export default {
 async function handleApi(request: Request, env: Env, url: URL): Promise<Response> {
   {
     if (url.pathname === "/api/race") return routeRace(request, env, url);
-    if (url.pathname !== "/api/game" && url.pathname !== "/.netlify/functions/game") return env.ASSETS.fetch(request);
+    if (url.pathname !== "/api/game") return env.ASSETS.fetch(request);
     if (request.method === "OPTIONS") return new Response(null, { status: 204 });
     let body: any = null;
     if (request.method === "POST") {

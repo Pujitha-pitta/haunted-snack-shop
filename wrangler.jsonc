@@ -6,7 +6,7 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/.netlify/functions/*"]
+    "run_worker_first": ["/api/*"]
   },
   "durable_objects": {
     "bindings": [

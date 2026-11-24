@@ -2,7 +2,7 @@
 export const API_ORIGIN = location.hostname.endsWith("github.io") ? "https://haunted-snack-shop.nagapujitha456.workers.dev" : "";
 // Folder this page is served from: "/" on Cloudflare, "/haunted-snack-shop/" on GitHub Pages.
 export const BASE = location.pathname.replace(/[^/]*$/, "");
-const API = API_ORIGIN + "/.netlify/functions/game";
+const API = API_ORIGIN + "/api/game";
 
 export async function request(action, payload = {}) {
   const url = action === "get"
